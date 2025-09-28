@@ -11,6 +11,7 @@ import { RenderEngine } from './modules/RenderEngine.js';
 import { UnitRenderer } from './modules/UnitRenderer.js';
 import { AnimationSystem } from './modules/AnimationSystem.js';
 import { CombatAnimations } from './modules/CombatAnimations.js';
+import { CombatEffectsSystem } from './modules/CombatEffectsSystem.js';
 
 export class BattleChess2000 {
     constructor() {
@@ -28,6 +29,7 @@ export class BattleChess2000 {
         this.unitRenderer = new UnitRenderer();
         this.animationSystem = new AnimationSystem(this.coordinateSystem);
         this.combatAnimations = new CombatAnimations(this.coordinateSystem);
+        this.combatEffectsSystem = new CombatEffectsSystem(this.canvas, this.coordinateSystem);
         this.renderEngine = new RenderEngine(this.canvas, this.coordinateSystem);
 
         // Game state
@@ -55,7 +57,8 @@ export class BattleChess2000 {
         this.renderEngine.setExternalRenderers(
             this.unitRenderer,
             this.animationSystem,
-            this.combatAnimations
+            this.combatAnimations,
+            this.combatEffectsSystem
         );
 
         // Setup UI callbacks
@@ -166,8 +169,13 @@ export class BattleChess2000 {
 
     onGameOver(data) {
         const isWinner = data.winner === this.playerIndex;
-        this.uiManager.showGameOverMenu(isWinner);
-        this.inGame = false;
+
+        // Delay victory screen to show final game state
+        console.log('🏆 Game Over! Showing final state for 2 seconds...');
+        setTimeout(() => {
+            this.uiManager.showGameOverMenu(isWinner);
+            this.inGame = false;
+        }, 2000); // 2 second delay
     }
 
     // Game actions

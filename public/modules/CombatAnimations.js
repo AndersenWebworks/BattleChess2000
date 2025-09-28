@@ -29,36 +29,60 @@ export class CombatAnimations {
         console.log('📊 Board comparison - oldState vs newState');
 
         // Compare each unit's HP to detect attacks and deaths
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 25; i++) {
             const oldUnit = oldState.board[i];
             const newUnit = newState.board[i];
 
             // Check for unit death (unit existed, now it's gone)
             if (oldUnit && !newUnit) {
-                // Find who killed this unit by looking for units that just acted
-                for (let j = 0; j < 16; j++) {
-                    const attacker = newState.board[j];
-                    const oldAttacker = oldState.board[j];
-
-                    if (attacker && oldAttacker &&
-                        !oldAttacker.hasAttackedThisTurn && attacker.hasAttackedThisTurn) {
-
-                        console.log(`💀 DEATH ANIMATION: ${oldUnit.type} killed by ${attacker.weapon} at position ${i}`);
-
-                        // Trigger epic death animation
-                        this.triggerDeathAnimation(i, oldUnit.type, attacker.weapon);
-                        console.log(`🎭 Death animation triggered for ${oldUnit.type}`);
-
-                        if (animationSystem) {
-                            const pos = this.coordinateSystem.getVisualPosition(i);
-                            animationSystem.triggerDamageNumber(
-                                pos.x + 50, pos.y + 50, oldUnit.currentHp
-                            );
-                            animationSystem.triggerParticles(
-                                pos.x + 50, pos.y + 50, 10, '#ff0000'
-                            );
-                        }
+                // First check if this unit just moved to another position
+                let unitMovedElsewhere = false;
+                for (let j = 0; j < 25; j++) {
+                    const checkUnit = newState.board[j];
+                    if (checkUnit && checkUnit.id === oldUnit.id) {
+                        console.log(`🚶 Unit ${oldUnit.type} moved from ${i} to ${j} - not dead!`);
+                        unitMovedElsewhere = true;
                         break;
+                    }
+                }
+
+                // Only trigger death animation if unit truly died (not moved)
+                if (!unitMovedElsewhere) {
+                    console.log(`🩸 Unit death detected at position ${i}: ${oldUnit.type} is gone!`);
+
+                    // Find who killed this unit by looking for units that just acted
+                    let killerFound = false;
+                    for (let j = 0; j < 25; j++) {
+                        const attacker = newState.board[j];
+                        const oldAttacker = oldState.board[j];
+
+                        if (attacker && oldAttacker &&
+                            !oldAttacker.hasAttackedThisTurn && attacker.hasAttackedThisTurn) {
+
+                            console.log(`💀 DEATH ANIMATION: ${oldUnit.type} killed by ${attacker.weapon} at position ${i}`);
+
+                            // Trigger epic death animation
+                            this.triggerDeathAnimation(i, oldUnit.type, attacker.weapon);
+                            console.log(`🎭 Death animation triggered for ${oldUnit.type}`);
+                            killerFound = true;
+                            break;
+                        }
+                    }
+
+                    // If no specific killer found, use generic death
+                    if (!killerFound) {
+                        console.log(`🗡️ Generic death animation for ${oldUnit.type} at position ${i}`);
+                        this.triggerDeathAnimation(i, oldUnit.type, 'SWORD');
+                    }
+
+                    if (animationSystem) {
+                        const pos = this.coordinateSystem.getVisualPosition(i);
+                        animationSystem.triggerDamageNumber(
+                            pos.x + 50, pos.y + 50, oldUnit.currentHp
+                        );
+                        animationSystem.triggerParticles(
+                            pos.x + 50, pos.y + 50, 10, '#ff0000'
+                        );
                     }
                 }
             }
@@ -156,6 +180,10 @@ export class CombatAnimations {
             progress: 0,
             phaseStartTime: Date.now()
         });
+
+        console.log(`🎬 Death animation added! Array length: ${this.deathAnimations.length}`);
+        console.log(`📍 Position: ${centerX}, ${centerY}`);
+        console.log(`⚔️ Killer weapon: ${killerWeapon}`);
 
         // Create BRUTAL blood spray - medieval combat is messy!
         let bloodCount = killerWeapon === 'SWORD' ? 25 : killerWeapon === 'LANCE' ? 18 : 12;
@@ -451,6 +479,10 @@ export class CombatAnimations {
     }
 
     drawDeathAnimations(ctx) {
+        if (this.deathAnimations.length > 0) {
+            console.log(`🎭 Drawing ${this.deathAnimations.length} death animations`);
+        }
+
         this.deathAnimations.forEach(deathAnim => {
             const currentPhase = deathAnim.phases[deathAnim.currentPhase];
             if (!currentPhase) return;

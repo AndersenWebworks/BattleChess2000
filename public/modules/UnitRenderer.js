@@ -54,7 +54,8 @@ export class UnitRenderer {
 
     // Emotional Warrior System - Base model with facial expressions and equipment
     drawEmotionalWarrior(ctx, centerX, centerY, size, unit) {
-        const isOwn = unit.owner === this.playerIndex; // Proper player check
+        // Fixed colors: Player 0 = Red, Player 1 = Blue
+        const playerColor = unit.owner === 0 ? '#f44336' : '#2196F3';
         const scale = size / 25;
 
         // Determine emotional state
@@ -63,23 +64,21 @@ export class UnitRenderer {
         if (unit.currentHp < unit.maxHp * 0.3) emotion = 'hurt';
 
         // Base warrior body
-        this.drawWarriorBody(ctx, centerX, centerY, size, isOwn, emotion);
+        this.drawWarriorBody(ctx, centerX, centerY, size, playerColor, emotion);
 
         // Equipment based on unit type
-        this.drawWarriorEquipment(ctx, centerX, centerY, size, unit.type, isOwn);
+        this.drawWarriorEquipment(ctx, centerX, centerY, size, unit.type, playerColor);
     }
 
-    drawWarriorBody(ctx, centerX, centerY, size, isOwn, emotion) {
+    drawWarriorBody(ctx, centerX, centerY, size, playerColor, emotion) {
         const scale = size / 25;
 
         // Player-specific colors for clear identification
         const skinColor = '#FFDBAC'; // Skin tone
         const eyeColor = '#000000';
 
-        // CLEAR PLAYER COLORS
-        const bodyColor = isOwn
-            ? '#2E7D32'  // Own units: Dark Green
-            : '#C62828'; // Enemy units: Dark Red
+        // Use player color for body
+        const bodyColor = playerColor;
 
         // HEAD - Larger and more expressive
         ctx.fillStyle = skinColor;
@@ -272,21 +271,21 @@ export class UnitRenderer {
         ctx.stroke();
     }
 
-    drawWarriorEquipment(ctx, centerX, centerY, size, unitType, isOwn) {
+    drawWarriorEquipment(ctx, centerX, centerY, size, unitType, playerColor) {
         if (unitType === 'SCOUT') {
-            this.drawScoutEquipment(ctx, centerX, centerY, size, isOwn);
+            this.drawScoutEquipment(ctx, centerX, centerY, size, playerColor);
         } else if (unitType === 'ARCHER') {
-            this.drawArcherEquipment(ctx, centerX, centerY, size, isOwn);
+            this.drawArcherEquipment(ctx, centerX, centerY, size, playerColor);
         } else if (unitType === 'KNIGHT') {
-            this.drawKnightEquipment(ctx, centerX, centerY, size, isOwn);
+            this.drawKnightEquipment(ctx, centerX, centerY, size, playerColor);
         } else if (unitType === 'MAGE') {
-            this.drawMageEquipment(ctx, centerX, centerY, size, isOwn);
+            this.drawMageEquipment(ctx, centerX, centerY, size, playerColor);
         }
     }
 
-    drawScoutEquipment(ctx, centerX, centerY, size, isOwn) {
+    drawScoutEquipment(ctx, centerX, centerY, size, playerColor) {
         // Player-colored scout helm
-        ctx.fillStyle = isOwn ? '#4CAF50' : '#FF5252'; // Green vs Red
+        ctx.fillStyle = playerColor;
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.6, size * 0.32, Math.PI, 2 * Math.PI);
         ctx.fill();
@@ -308,9 +307,9 @@ export class UnitRenderer {
         ctx.stroke();
     }
 
-    drawArcherEquipment(ctx, centerX, centerY, size, isOwn) {
+    drawArcherEquipment(ctx, centerX, centerY, size, playerColor) {
         // Player-colored archer helm with feather
-        ctx.fillStyle = isOwn ? '#2196F3' : '#E91E63'; // Blue vs Pink
+        ctx.fillStyle = playerColor;
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.6, size * 0.32, Math.PI, 2 * Math.PI);
         ctx.fill();
@@ -345,9 +344,9 @@ export class UnitRenderer {
         }
     }
 
-    drawKnightEquipment(ctx, centerX, centerY, size, isOwn) {
+    drawKnightEquipment(ctx, centerX, centerY, size, playerColor) {
         // Player-colored heavy helm with visor
-        ctx.fillStyle = isOwn ? '#FF9800' : '#9C27B0'; // Orange vs Purple
+        ctx.fillStyle = playerColor;
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.6, size * 0.35, Math.PI, 2 * Math.PI);
         ctx.fill();
@@ -397,9 +396,9 @@ export class UnitRenderer {
         ctx.fill();
     }
 
-    drawMageEquipment(ctx, centerX, centerY, size, isOwn) {
+    drawMageEquipment(ctx, centerX, centerY, size, playerColor) {
         // Player-colored mystical hood
-        ctx.fillStyle = isOwn ? '#9C27B0' : '#E91E63'; // Purple vs Pink
+        ctx.fillStyle = playerColor;
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.6, size * 0.35, Math.PI, 2 * Math.PI);
         ctx.fill();

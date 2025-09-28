@@ -200,47 +200,61 @@ export class UIManager {
 
     createCardElement(card, index) {
         const cardDiv = document.createElement('div');
-        cardDiv.className = 'card';
+        cardDiv.className = 'battle-card';
         cardDiv.dataset.cardIndex = index;
 
         const unitData = GameData.UNIT_TYPES[card.type];
         const canPlay = this.gameState.players[this.playerIndex].mana >= card.cost;
 
-        cardDiv.classList.add(`card-${card.type.toLowerCase()}`);
+        // Add card-type specific class
+        cardDiv.classList.add(`battle-card--${card.type.toLowerCase()}`);
 
-        if (!canPlay) {
-            cardDiv.classList.add('disabled');
+        // Add playability states
+        if (canPlay) {
+            cardDiv.classList.add('battle-card--playable');
+        } else {
+            cardDiv.classList.add('battle-card--unplayable');
         }
 
-        // Get unit-specific symbol and weapon
-        let unitSymbol, weaponIcon;
+        // Get unit-specific symbol and weapon icons
+        let unitSymbol, weaponIcon, moveIcon;
         if (card.type === 'SCOUT') {
             unitSymbol = '🗡';
             weaponIcon = '⚔️';
+            moveIcon = '🔄'; // L-shape movement
         } else if (card.type === 'ARCHER') {
             unitSymbol = '🏹';
             weaponIcon = '🎯';
+            moveIcon = '📏'; // Range
         } else if (card.type === 'KNIGHT') {
             unitSymbol = '🛡';
             weaponIcon = '🗡️';
+            moveIcon = '🎯'; // 8-direction
         } else if (card.type === 'MAGE') {
             unitSymbol = '🔮';
             weaponIcon = '✨';
+            moveIcon = '⚡'; // Diagonal magic
         }
 
+        // 🃏 NEW TRADING-CARD LAYOUT STRUCTURE
         cardDiv.innerHTML = `
-            <div class="card-header">
-                <span class="card-symbol">${unitSymbol}</span>
-                <span class="card-cost">${card.cost}</span>
+            <div class="battle-card__header">
+                <div class="battle-card__cost">${card.cost}</div>
+                <div class="battle-card__type-icon">${weaponIcon}</div>
             </div>
-            <div class="card-title">${card.type}</div>
-            <div class="card-stats">
-                HP: ${unitData.hp} | ATK: ${unitData.attack}
+
+            <div class="battle-card__art-area">
+                <div class="battle-card__symbol">${unitSymbol}</div>
+            </div>
+
+            <div class="battle-card__name-bar">${card.type}</div>
+
+            <div class="battle-card__stats">
+                ${weaponIcon}${unitData.attack} ❤️${unitData.hp}
                 <br>
-                Move: ${unitData.movement} | ${weaponIcon} ${unitData.weapon}
+                ${moveIcon} ${unitData.movement}
             </div>
         `;
-
 
         // Add click handler if card can be played
         if (canPlay) {
@@ -271,15 +285,13 @@ export class UIManager {
         }
 
         // Remove previous selection
-        document.querySelectorAll('.card').forEach(card => {
-            card.style.transform = '';
-            card.classList.remove('selected');
+        document.querySelectorAll('.battle-card').forEach(card => {
+            card.classList.remove('battle-card--selected');
         });
 
-        // Highlight selected card
+        // Highlight selected card with new BEM class
         const cardElement = document.querySelector(`[data-card-index="${index}"]`);
-        cardElement.style.transform = 'translateY(-10px)';
-        cardElement.classList.add('selected');
+        cardElement.classList.add('battle-card--selected');
 
         this.selectedCard = index;
 
@@ -296,9 +308,8 @@ export class UIManager {
 
     clearCardSelection() {
         this.selectedCard = null;
-        document.querySelectorAll('.card').forEach(card => {
-            card.style.transform = '';
-            card.classList.remove('selected');
+        document.querySelectorAll('.battle-card').forEach(card => {
+            card.classList.remove('battle-card--selected');
         });
 
         // Update action guidance for cleared selection
@@ -313,10 +324,12 @@ export class UIManager {
         const banner = document.getElementById('turnBanner');
         const text = document.getElementById('turnText');
         const icon = document.getElementById('turnIcon');
+        const context = document.getElementById('turnContext');
 
         // Remove previous turn classes
         banner.classList.remove('my-turn', 'opponent-turn');
 
+        // Update main turn info
         if (isMyTurn) {
             banner.classList.add('my-turn');
             text.textContent = 'DEIN ZUG';
@@ -326,6 +339,22 @@ export class UIManager {
             text.textContent = 'GEGNER DRAN';
             icon.textContent = '⏳';
         }
+
+        // Update context info (players, turn number, game state)
+        this.updateTurnContext(context);
+    }
+
+    updateTurnContext(contextElement) {
+        if (!this.gameState || !contextElement) return;
+
+        const playerDisplay = this.playerName || 'You';
+        const opponentDisplay = this.opponentName || 'Opponent';
+        const turnNumber = this.gameState.turnNumber || 1;
+
+        // Enhanced context with all important info
+        const contextText = `${playerDisplay} vs ${opponentDisplay} • Turn ${turnNumber}`;
+
+        contextElement.textContent = contextText;
     }
 
     // Status and debug display methods

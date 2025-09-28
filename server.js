@@ -152,7 +152,7 @@ class GameRoom {
 
   createUnit(type, owner, position) {
     const unitTypes = {
-      SCOUT: { hp: 25, attack: 30, movement: 'L_SHAPE', weapon: 'SWORD' },
+      SCOUT: { hp: 25, attack: 30, movement: 'ADJACENT', weapon: 'SWORD' },
       ARCHER: { hp: 50, attack: 40, movement: 'STRAIGHT', weapon: 'BOW' },
       KNIGHT: { hp: 90, attack: 60, movement: 'ADJACENT', weapon: 'LANCE' },
       MAGE: { hp: 35, attack: 80, movement: 'DIAGONAL', weapon: 'STAFF' }
@@ -290,7 +290,7 @@ class GameRoom {
     }
 
     // Validate destination
-    if (toIndex < 0 || toIndex >= 16) {
+    if (toIndex < 0 || toIndex >= 25) {
       return { success: false, error: 'Invalid destination' };
     }
 
@@ -298,15 +298,10 @@ class GameRoom {
       return { success: false, error: 'Destination occupied' };
     }
 
-    // Validate movement range
-    const fromX = fromIndex % 4;
-    const fromY = Math.floor(fromIndex / 4);
-    const toX = toIndex % 4;
-    const toY = Math.floor(toIndex / 4);
-    const distance = Math.abs(toX - fromX) + Math.abs(toY - fromY);
-
-    if (distance > unit.movement) {
-      return { success: false, error: 'Move too far' };
+    // Validate movement using chess patterns
+    const validMoves = this.calculateValidMoves(fromIndex, unit);
+    if (!validMoves.includes(toIndex)) {
+      return { success: false, error: 'Invalid movement pattern' };
     }
 
     // Execute movement
@@ -346,19 +341,9 @@ class GameRoom {
       return { success: false, error: 'Invalid target' };
     }
 
-    // Validate attack range
-    const attackerX = attackerIndex % 4;
-    const attackerY = Math.floor(attackerIndex / 4);
-    const targetX = targetIndex % 4;
-    const targetY = Math.floor(targetIndex / 4);
-    const distance = Math.abs(targetX - attackerX) + Math.abs(targetY - attackerY);
-
-    let maxRange = 1; // Default melee range
-    if (attacker.weapon === 'BOW') {
-      maxRange = 2; // Archers have longer range
-    }
-
-    if (distance > maxRange) {
+    // Validate attack range using proper patterns
+    const validTargets = this.calculateValidTargets(attackerIndex, attacker, attacker.owner);
+    if (!validTargets.includes(targetIndex)) {
       return { success: false, error: 'Target out of range' };
     }
 
@@ -415,6 +400,204 @@ class GameRoom {
     }
 
     return { gameOver: false, winner: null };
+  }
+
+  // Calculate valid movement tiles with chess-like patterns
+  calculateValidMoves(fromIndex, unit) {
+    const validMoves = [];
+    const fromX = fromIndex % 5;
+    const fromY = Math.floor(fromIndex / 5);
+    const movementType = unit.movement;
+
+    if (movementType === 'L_SHAPE') {
+      // Scout: Knight/Springer pattern - can jump over units
+      const lShapeMoves = [
+        [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+        [1, -2], [1, 2], [2, -1], [2, 1]
+      ];
+
+      for (const [dx, dy] of lShapeMoves) {
+        const toX = fromX + dx;
+        const toY = fromY + dy;
+        const toIndex = toY * 5 + toX;
+
+        // Check bounds
+        if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) continue;
+
+        // Check if tile is empty (L-shape can jump over units)
+        if (!this.gameState.board[toIndex]) {
+          validMoves.push(toIndex);
+        }
+      }
+    } else if (movementType === 'STRAIGHT') {
+      // Archer: Rook pattern - straight lines 1-2 tiles
+      const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+      for (const [dx, dy] of directions) {
+        for (let range = 1; range <= 2; range++) {
+          const toX = fromX + dx * range;
+          const toY = fromY + dy * range;
+          const toIndex = toY * 5 + toX;
+
+          // Check bounds
+          if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) break;
+
+          // Check if blocked by unit
+          if (this.gameState.board[toIndex]) break;
+
+          validMoves.push(toIndex);
+        }
+      }
+    } else if (movementType === 'ADJACENT') {
+      // Knight: King pattern - 1 tile in all 8 directions
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+
+      for (const [dx, dy] of directions) {
+        const toX = fromX + dx;
+        const toY = fromY + dy;
+        const toIndex = toY * 5 + toX;
+
+        // Check bounds
+        if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) continue;
+
+        // Check if tile is empty
+        if (!this.gameState.board[toIndex]) {
+          validMoves.push(toIndex);
+        }
+      }
+    } else if (movementType === 'DIAGONAL') {
+      // Mage: Bishop pattern - diagonal only 1-3 tiles
+      const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+
+      for (const [dx, dy] of directions) {
+        for (let range = 1; range <= 3; range++) {
+          const toX = fromX + dx * range;
+          const toY = fromY + dy * range;
+          const toIndex = toY * 5 + toX;
+
+          // Check bounds
+          if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) break;
+
+          // Check if blocked by unit
+          if (this.gameState.board[toIndex]) break;
+
+          validMoves.push(toIndex);
+        }
+      }
+    }
+
+    return validMoves;
+  }
+
+  // Calculate valid attack targets with chess-like patterns
+  calculateValidTargets(fromIndex, unit, playerIndex) {
+    const validTargets = [];
+    const fromX = fromIndex % 5;
+    const fromY = Math.floor(fromIndex / 5);
+
+    if (unit.weapon === 'SWORD') {
+      // Scout: Melee range 1 (adjacent)
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+
+      for (const [dx, dy] of directions) {
+        const toX = fromX + dx;
+        const toY = fromY + dy;
+        const toIndex = toY * 5 + toX;
+
+        // Check bounds
+        if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) continue;
+
+        // Check if there's an enemy unit
+        const target = this.gameState.board[toIndex];
+        if (target && target.owner !== playerIndex) {
+          validTargets.push(toIndex);
+        }
+      }
+    } else if (unit.weapon === 'BOW') {
+      // Archer: All directions range 2
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+
+      for (const [dx, dy] of directions) {
+        for (let range = 1; range <= 2; range++) {
+          const toX = fromX + dx * range;
+          const toY = fromY + dy * range;
+          const toIndex = toY * 5 + toX;
+
+          // Check bounds
+          if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) break;
+
+          const target = this.gameState.board[toIndex];
+          if (target) {
+            // If enemy, can attack
+            if (target.owner !== playerIndex) {
+              validTargets.push(toIndex);
+            }
+            // Stop line regardless (blocked by any unit)
+            break;
+          }
+        }
+      }
+    } else if (unit.weapon === 'LANCE') {
+      // Knight: Melee range 1 (adjacent)
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+
+      for (const [dx, dy] of directions) {
+        const toX = fromX + dx;
+        const toY = fromY + dy;
+        const toIndex = toY * 5 + toX;
+
+        // Check bounds
+        if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) continue;
+
+        // Check if there's an enemy unit
+        const target = this.gameState.board[toIndex];
+        if (target && target.owner !== playerIndex) {
+          validTargets.push(toIndex);
+        }
+      }
+    } else if (unit.weapon === 'STAFF') {
+      // Mage: Diagonal range 4
+      const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+
+      for (const [dx, dy] of directions) {
+        for (let range = 1; range <= 4; range++) {
+          const toX = fromX + dx * range;
+          const toY = fromY + dy * range;
+          const toIndex = toY * 5 + toX;
+
+          // Check bounds
+          if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) break;
+
+          const target = this.gameState.board[toIndex];
+          if (target) {
+            // If enemy, can attack
+            if (target.owner !== playerIndex) {
+              validTargets.push(toIndex);
+            }
+            // Stop line regardless (blocked by any unit)
+            break;
+          }
+        }
+      }
+    }
+
+    return validTargets;
   }
 }
 

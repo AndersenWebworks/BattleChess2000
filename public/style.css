@@ -61,38 +61,43 @@ body::before {
   position: relative;
 }
 
-/* Medieval Battle Header */
+/* 📱 MOBILE-FIRST SMART HEADER */
 .game-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 70px;
+
+  /* Mobile-First: Minimal Height */
+  height: 35px;
+
+  /* Premium Medieval Background */
   background:
     linear-gradient(135deg,
-      rgba(45, 27, 14, 0.95) 0%,
-      rgba(26, 10, 10, 0.98) 50%,
-      rgba(0, 0, 0, 0.99) 100%
+      rgba(45, 27, 14, 0.98) 0%,
+      rgba(26, 10, 10, 0.99) 50%,
+      rgba(0, 0, 0, 1) 100%
     );
-  border-bottom: 3px solid #8b4513;
+  border-bottom: 2px solid #8b4513;
   box-shadow:
-    0 2px 10px rgba(139, 0, 0, 0.5),
-    inset 0 1px 0 rgba(212, 175, 55, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+    0 3px 15px rgba(139, 0, 0, 0.6),
+    inset 0 1px 0 rgba(212, 175, 55, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+
+  /* Mobile-First Grid: Only Essential Info */
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
-  grid-template-areas: "title status names mana connection";
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "mana connection";
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   padding: 0 15px;
   z-index: 100;
-  position: relative;
 
-  /* Safe Area Support für moderne iPhones */
+  /* Safe Area Support */
   padding-top: env(safe-area-inset-top);
   padding-left: max(15px, env(safe-area-inset-left));
   padding-right: max(15px, env(safe-area-inset-right));
-  height: calc(70px + env(safe-area-inset-top));
+  height: calc(35px + env(safe-area-inset-top));
 }
 
 /* Medieval battle-worn texture overlay */
@@ -114,35 +119,32 @@ body::before {
   pointer-events: none;
 }
 
+/* 🎯 MINIMAL HEADER ELEMENTS */
+
+/* Game Title: Hidden on Mobile, Shown on Tablet+ */
 .game-title {
+  display: none; /* Hidden by default */
   grid-area: title;
   font-family: 'Cinzel Decorative', serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #d4af37;
   text-shadow:
     2px 2px 4px rgba(0, 0, 0, 0.8),
-    0 0 10px rgba(212, 175, 55, 0.5),
-    0 0 20px rgba(139, 0, 0, 0.3);
+    0 0 8px rgba(212, 175, 55, 0.5);
   letter-spacing: 1px;
   position: relative;
   z-index: 2;
 }
 
+/* Game Status: Moved to Turn Banner */
 .game-status {
-  grid-area: status;
-  font-size: 14px;
-  color: #ffffff;
-  text-align: center;
+  display: none; /* Moved to turn banner */
 }
 
+/* Player Info: Moved to Turn Banner */
 .player-info {
-  grid-area: names;
-  font-size: 12px;
-  color: #ffffff;
-  text-align: center;
-  white-space: nowrap;
-  opacity: 0.8;
+  display: none; /* Moved to turn banner */
 }
 
 .connection-status {
@@ -173,37 +175,68 @@ body::before {
   box-shadow: 0 0 10px rgba(68, 255, 68, 0.5);
 }
 
-/* Turn Banner - Very prominent turn indicator */
+/* 🎪 ENHANCED TURN BANNER AS INFO HUB */
 .turn-banner {
   position: fixed;
-  top: calc(70px + env(safe-area-inset-top)); /* Angepasst für Safe Area */
+  top: calc(35px + env(safe-area-inset-top)); /* Adjusted for minimal header */
   left: 0;
   right: 0;
-  height: 60px;
+  min-height: 65px;
   z-index: 90;
   display: none; /* Hidden by default */
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 8px 15px;
   transition: all 0.3s ease;
+
+  /* Enhanced Background */
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 .turn-banner.active {
   display: flex; /* Show during game */
 }
 
+/* 🎯 ENHANCED TURN INDICATOR SYSTEM */
 .turn-indicator {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 15px;
-  padding: 12px 30px;
-  border-radius: 30px;
+  gap: 6px;
+  padding: 12px 25px;
+  border-radius: 12px;
   font-weight: bold;
-  font-size: 20px;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease;
   border: 3px solid;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+/* Main Turn Info */
+.turn-main {
+  font-size: 20px;
+  letter-spacing: 2px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Context Info (Players, Turn Number, etc.) */
+.turn-context {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  opacity: 0.9;
+  text-align: center;
+  text-transform: none;
+  line-height: 1.3;
 }
 
 /* Your turn styling */
@@ -471,38 +504,45 @@ body::before {
   66% { opacity: 0.8; transform: scaleX(0.9); }
 }
 
-/* ENHANCED MEDIEVAL CARDS - SOLID COLORS */
-.card {
-  min-width: 80px;
-  width: 80px;
-  height: 100px;
-  background: #3e2723;
-  border: 3px solid #d4af37;
-  border-radius: 8px;
+/* 🃏 TRADING-CARD SYSTEM - CLEAN BEM ARCHITECTURE */
+.battle-card {
+  /* Card Container - Mobile-First Sizing */
+  min-width: 100px;
+  width: 100px;
+  height: 130px;
+
+  /* Trading-Card Structure */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
   position: relative;
+
+  /* Medieval Theme Base */
+  background: linear-gradient(145deg, #3e2723, #2c1810);
+  border: 3px solid #d4af37;
+  border-radius: 10px;
+
+  /* Premium Visual Effects */
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.7),
+    inset 0 2px 0 rgba(212, 175, 55, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5);
+
+  /* Interaction */
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Typography Base */
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  font-weight: 700;
-  text-align: center;
-  color: #fff;
-  overflow: hidden;
+  color: #ffffff;
 
-  /* Simplified shadows */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-
-  /* Touch optimization */
+  /* Touch Optimization */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
 }
 
-/* Subtle texture overlay */
-.card::before {
+/* Medieval Card Texture */
+.battle-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -513,143 +553,180 @@ body::before {
     repeating-linear-gradient(
       45deg,
       transparent,
-      transparent 2px,
-      rgba(212, 175, 55, 0.05) 2px,
-      rgba(212, 175, 55, 0.05) 3px
+      transparent 3px,
+      rgba(212, 175, 55, 0.03) 3px,
+      rgba(212, 175, 55, 0.03) 4px
     );
+  border-radius: 8px;
   pointer-events: none;
-  border-radius: 6px;
   z-index: 1;
 }
 
-/* Card Content Styling */
-.card-header {
+/* 🏛️ TRADING-CARD LAYOUT SECTIONS */
+
+/* Header Section: Cost + Type Icon */
+.battle-card__header {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  padding: 4px 8px;
-  margin-bottom: 2px;
+  padding: 6px 8px;
+  height: 28px;
 }
 
-.card-symbol {
-  font-size: 16px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.card-cost {
-  background: #d4af37;
-  color: #2c1810;
+.battle-card__cost {
+  background: linear-gradient(145deg, #ff6b35, #ff8f65);
+  color: #ffffff;
   font-weight: 900;
-  font-size: 12px;
-  min-width: 18px;
-  height: 18px;
+  font-size: 11px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  border: 2px solid #ffffff;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
-.card-title {
-  position: relative;
-  z-index: 2;
-  font-size: 11px;
-  font-weight: 700;
+.battle-card__type-icon {
+  font-size: 14px;
   color: #d4af37;
   text-shadow:
-    1px 1px 2px rgba(0, 0, 0, 0.9),
+    2px 2px 4px rgba(0, 0, 0, 0.8),
     0 0 8px rgba(212, 175, 55, 0.5);
-  margin: 4px 0;
+}
+
+/* Art Area Section: Main Visual Focus */
+.battle-card__art-area {
+  position: relative;
+  z-index: 3;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.battle-card__symbol {
+  font-size: 32px;
+  text-shadow:
+    3px 3px 6px rgba(0, 0, 0, 0.8),
+    0 0 12px rgba(212, 175, 55, 0.4);
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+}
+
+/* Name Bar Section */
+.battle-card__name-bar {
+  position: relative;
+  z-index: 3;
+  background: linear-gradient(90deg,
+    rgba(212, 175, 55, 0.9),
+    rgba(212, 175, 55, 0.7),
+    rgba(212, 175, 55, 0.9)
+  );
+  color: #2c1810;
+  font-weight: 700;
+  font-size: 10px;
+  text-align: center;
+  padding: 4px 6px;
+  margin: 0 6px;
+  border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-.card-stats {
+/* Stats Footer Section */
+.battle-card__stats {
   position: relative;
-  z-index: 2;
-  font-size: 9px;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.6);
   color: #e8e8e8;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-  line-height: 1.2;
+  font-size: 9px;
+  font-weight: 600;
   text-align: center;
-  padding: 0 4px;
+  padding: 4px;
+  margin: 4px 6px 6px 6px;
+  border-radius: 4px;
+  line-height: 1.3;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
-.card:hover,
-.card:active {
-  transform: translateY(-12px);
-  background: #6d4c41;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.8);
-  border-color: #fff;
-  border-width: 4px;
+/* 🎨 BATTLE-CARD INTERACTION STATES */
+
+.battle-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.8),
+    0 0 25px rgba(212, 175, 55, 0.6),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  border-color: #ffffff;
+  border-width: 3px;
   z-index: 10;
 }
 
-.card:hover .card-title {
-  color: #fff;
-  text-shadow:
-    2px 2px 4px rgba(0, 0, 0, 0.9),
-    0 0 15px rgba(212, 175, 55, 0.8);
+.battle-card:hover .battle-card__symbol {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8));
 }
 
-.card.disabled {
-  opacity: 0.5;
+.battle-card:hover .battle-card__name-bar {
+  background: linear-gradient(90deg, #ffffff, #f5f5f5, #ffffff);
+  color: #2c1810;
+  text-shadow: none;
+}
+
+.battle-card--disabled {
+  opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
+  filter: grayscale(0.4);
 }
 
-.card .card-cost {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  width: 20px;
-  height: 20px;
-  background: #ff6b35;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
-  /* Touch target enhancement */
+/* 💫 CARD-TYPE SPECIFIC STYLING */
+
+.battle-card--scout {
+  background: linear-gradient(145deg, #2E7D32, #388E3C);
+  border-color: #4CAF50;
 }
 
-.card .card-cost::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: -12px;
-  right: -12px;
-  bottom: -12px;
-  /* 44px touch area für kleine Card-Cost-Kreise */
+.battle-card--scout .battle-card__cost {
+  background: linear-gradient(145deg, #1B5E20, #2E7D32);
 }
 
-.card .card-weapon {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 12px;
+.battle-card--archer {
+  background: linear-gradient(145deg, #1565C0, #1976D2);
+  border-color: #2196F3;
 }
 
-.card .card-symbol {
-  font-size: 24px;
-  margin-top: 20px;
-  margin-bottom: 5px;
+.battle-card--archer .battle-card__cost {
+  background: linear-gradient(145deg, #0D47A1, #1565C0);
 }
 
-.card .card-name {
-  font-size: 9px;
-  margin-bottom: 5px;
+.battle-card--knight {
+  background: linear-gradient(145deg, #E65100, #F57C00);
+  border-color: #FF9800;
 }
 
-.card .card-stats {
-  font-size: 10px; /* Vergrößert von 8px für bessere Lesbarkeit */
-  opacity: 0.9;
-  line-height: 1.2;
+.battle-card--knight .battle-card__cost {
+  background: linear-gradient(145deg, #BF360C, #E65100);
+}
+
+.battle-card--mage {
+  background: linear-gradient(145deg, #6A1B9A, #7B1FA2);
+  border-color: #9C27B0;
+}
+
+.battle-card--mage .battle-card__cost {
+  background: linear-gradient(145deg, #4A148C, #6A1B9A);
 }
 
 /* HEARTHSTONE STYLE MANA GEM SYSTEM */
@@ -862,34 +939,53 @@ body::before {
   --action-glow-color: #FFD700;
 }
 
-/* Card Action States */
-.card.playable {
+/* ⚡ BATTLE-CARD ACTION STATES */
+
+.battle-card--playable {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.card.playable:hover {
-  transform: translateY(-8px) scale(1.05);
+.battle-card--playable:hover {
+  transform: translateY(-12px) scale(1.05);
   box-shadow:
-    0 12px 25px rgba(0, 0, 0, 0.6),
-    0 0 20px rgba(76, 175, 80, 0.8);
+    0 15px 35px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(76, 175, 80, 0.8),
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
   border-color: #4CAF50;
+  border-width: 4px;
 }
 
-.card.selected {
-  transform: translateY(-12px) scale(1.08);
+.battle-card--selected {
+  transform: translateY(-15px) scale(1.08);
   box-shadow:
-    0 15px 30px rgba(0, 0, 0, 0.7),
-    0 0 25px rgba(255, 215, 0, 1);
+    0 20px 40px rgba(0, 0, 0, 0.9),
+    0 0 35px rgba(255, 215, 0, 1),
+    inset 0 3px 0 rgba(255, 255, 255, 0.6);
   border-color: #FFD700;
-  border-width: 3px;
+  border-width: 4px;
   z-index: 1000;
+  animation: cardSelectedPulse 2s ease-in-out infinite;
 }
 
-.card.unplayable {
-  opacity: 0.6;
-  filter: grayscale(0.4);
+.battle-card--unplayable {
+  opacity: 0.5;
+  filter: grayscale(0.6) brightness(0.7);
   cursor: not-allowed;
+  pointer-events: none;
+}
+
+@keyframes cardSelectedPulse {
+  0%, 100% {
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.9),
+      0 0 35px rgba(255, 215, 0, 1);
+  }
+  50% {
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.9),
+      0 0 45px rgba(255, 215, 0, 1.2);
+  }
 }
 
 /* Button Action States */
@@ -1337,18 +1433,21 @@ body::before {
     font-size: 16px;
   }
 
-  /* Header Grid Layout responsive für Mobile */
+  /* 📱 MOBILE HEADER: Keeps minimal design */
   .game-header {
-    grid-template-columns: auto 1fr auto auto; /* 4 Spalten statt 5 */
-    grid-template-areas: "title status mana connection"; /* Player-Info ausgeblendet */
+    height: calc(30px + env(safe-area-inset-top));
+    grid-template-areas: "mana connection";
+    gap: 10px;
   }
 
-  .player-info {
-    display: none; /* Auf kleinen Screens ausblenden */
+  .mana-gem {
+    width: 20px;
+    height: 25px;
   }
 
-  .game-status {
-    font-size: 12px; /* Kleinere Schrift für mehr Platz */
+  .connection-status {
+    width: 16px;
+    height: 16px;
   }
 
   .mana-display {
@@ -1391,20 +1490,31 @@ body::before {
     gap: 6px;
   }
 
-  .card {
-    min-width: 70px;
-    width: 70px;
-    height: 90px;
-    font-size: 11px;
+  /* 📱 BATTLE-CARD MOBILE SIZING */
+  .battle-card {
+    min-width: 85px;
+    width: 85px;
+    height: 115px;
   }
 
-  /* Card-Stats Mobile Readability */
-  .card .card-stats {
-    font-size: 9px; /* Minimum für Mobile, aber nicht kleiner als 9px */
+  .battle-card__cost {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
   }
 
-  .card .card-name {
-    font-size: 8px; /* Minimum für Card-Namen */
+  .battle-card__symbol {
+    font-size: 28px;
+  }
+
+  .battle-card__name-bar {
+    font-size: 9px;
+    padding: 3px 4px;
+  }
+
+  .battle-card__stats {
+    font-size: 8px;
+    padding: 3px;
   }
 
   .menu-title {
@@ -1449,24 +1559,77 @@ body::before {
     height: 90px;
   }
 
-  .card {
-    height: 70px;
-    font-size: 10px;
+  /* 🌅 BATTLE-CARD LANDSCAPE SIZING */
+  .battle-card {
+    width: 75px;
+    height: 100px;
   }
 
-  /* Landscape Card Text Readability */
-  .card .card-stats {
-    font-size: 8px; /* Absolute minimum für Landscape */
+  .battle-card__cost {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
   }
 
-  .card .card-name {
-    font-size: 7px; /* Absolute minimum für Card-Namen im Landscape */
+  .battle-card__symbol {
+    font-size: 24px;
+  }
+
+  .battle-card__name-bar {
+    font-size: 8px;
+    padding: 2px 3px;
+  }
+
+  .battle-card__stats {
+    font-size: 7px;
+    padding: 2px;
   }
 
   /* Canvas Landscape-Optimierung */
   #gameCanvas {
     max-height: 35vh; /* Weniger Höhe im Landscape */
     max-width: 90vw;
+  }
+}
+
+/* 📱➡️💻 RESPONSIVE HEADER SYSTEM */
+
+/* Tablet: Add Turn Info to Header */
+@media (min-width: 768px) {
+  .game-header {
+    height: calc(45px + env(safe-area-inset-top));
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas: "mana turn-info connection";
+    gap: 20px;
+  }
+
+  .game-title {
+    display: block; /* Show on tablet+ */
+    grid-area: turn-info;
+    font-size: 14px;
+  }
+
+  .turn-banner {
+    top: calc(45px + env(safe-area-inset-top));
+  }
+}
+
+/* Desktop: Full Header with Title */
+@media (min-width: 1024px) {
+  .game-header {
+    height: calc(55px + env(safe-area-inset-top));
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas: "title mana turn-info connection";
+    gap: 25px;
+  }
+
+  .game-title {
+    font-size: 18px;
+    grid-area: title;
+  }
+
+  .turn-banner {
+    top: calc(55px + env(safe-area-inset-top));
   }
 }
 

@@ -4,7 +4,7 @@
 export class GameData {
     static get UNIT_TYPES() {
         return {
-            SCOUT: { hp: 25, attack: 30, movement: 'L_SHAPE', weapon: 'SWORD', cost: 1, color: '#4CAF50' },
+            SCOUT: { hp: 25, attack: 30, movement: 'ADJACENT', weapon: 'SWORD', cost: 1, color: '#4CAF50' },
             ARCHER: { hp: 50, attack: 40, movement: 'STRAIGHT', weapon: 'BOW', cost: 3, color: '#2196F3' },
             KNIGHT: { hp: 90, attack: 60, movement: 'ADJACENT', weapon: 'LANCE', cost: 5, color: '#FF9800' },
             MAGE: { hp: 35, attack: 80, movement: 'DIAGONAL', weapon: 'STAFF', cost: 6, color: '#9C27B0' }

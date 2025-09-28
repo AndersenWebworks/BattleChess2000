@@ -1,7 +1,9 @@
-// RenderEngine.js - Basic rendering and drawing coordination
+// RenderEngine.js - Enhanced rendering with animation systems
 // Part of BattleChess2000 modularization
 
 import { GameData } from './GameData.js';
+import { CardAnimationSystem } from './CardAnimationSystem.js';
+import { CombatEffectsSystem } from './CombatEffectsSystem.js';
 
 export class RenderEngine {
     constructor(canvas, coordinateSystem) {
@@ -18,12 +20,20 @@ export class RenderEngine {
         this.unitRenderer = null;
         this.animationSystem = null;
         this.combatAnimations = null;
+
+        // ✨ ENHANCED ANIMATION SYSTEMS
+        this.cardAnimationSystem = new CardAnimationSystem(canvas, coordinateSystem);
+        this.combatEffectsSystem = new CombatEffectsSystem(canvas, coordinateSystem);
     }
 
-    setExternalRenderers(unitRenderer, animationSystem, combatAnimations) {
+    setExternalRenderers(unitRenderer, animationSystem, combatAnimations, combatEffectsSystem) {
         this.unitRenderer = unitRenderer;
         this.animationSystem = animationSystem;
         this.combatAnimations = combatAnimations;
+        // Replace internal combatEffectsSystem with external one
+        if (combatEffectsSystem) {
+            this.combatEffectsSystem = combatEffectsSystem;
+        }
     }
 
     setGameState(gameState) {
@@ -88,6 +98,16 @@ export class RenderEngine {
             this.combatAnimations.drawDeathAnimations(this.ctx);
         }
 
+        // ✨ Draw card animations (flying cards, impacts)
+        if (this.cardAnimationSystem) {
+            this.cardAnimationSystem.renderAnimations();
+        }
+
+        // ⚔️ Draw combat effects (screen shake, impacts, damage numbers)
+        if (this.combatEffectsSystem) {
+            this.combatEffectsSystem.renderEffects();
+        }
+
         // Particles and damage numbers are drawn within drawAnimations
 
         this.drawUI();
@@ -98,6 +118,12 @@ export class RenderEngine {
         }
         if (this.combatAnimations) {
             this.combatAnimations.update();
+        }
+        if (this.cardAnimationSystem) {
+            this.cardAnimationSystem.update();
+        }
+        if (this.combatEffectsSystem) {
+            this.combatEffectsSystem.update();
         }
 
         // Keep rendering if animations are active
@@ -211,6 +237,16 @@ export class RenderEngine {
         }
 
         if (this.combatAnimations && this.combatAnimations.hasActiveAnimations()) {
+            hasAnimations = true;
+        }
+
+        // ✨ Check card animations
+        if (this.cardAnimationSystem && this.cardAnimationSystem.hasActiveAnimations()) {
+            hasAnimations = true;
+        }
+
+        // ⚔️ Check combat effects
+        if (this.combatEffectsSystem && this.combatEffectsSystem.hasActiveEffects()) {
             hasAnimations = true;
         }
 
@@ -407,7 +443,7 @@ export class RenderEngine {
 
             if (healthPercent > 0.6) {
                 // Healthy - green to yellow
-                gradient.addColorStop(0, '#4CAF50');
+                gradient.addColorStop(0, '#f44336'); // Player 0 = Red
                 gradient.addColorStop(1, '#66BB6A');
             } else if (healthPercent > 0.3) {
                 // Injured - yellow to orange
@@ -467,8 +503,8 @@ export class RenderEngine {
             indicators.push({ icon: '⚔️', color: '#ff6b6b' });
         }
 
-        // Owner indicator (color-coded)
-        const ownerColor = unit.owner === 0 ? '#4CAF50' : '#f44336';
+        // Owner indicator (color-coded) - Fixed colors: Player 0 = Red, Player 1 = Blue
+        const ownerColor = unit.owner === 0 ? '#f44336' : '#2196F3';
         indicators.push({ icon: '●', color: ownerColor });
 
         // Draw indicators
@@ -534,6 +570,51 @@ export class RenderEngine {
         this.ctx.restore();
     }
 
+    // ✨ CARD ANIMATION API
+    playCardToBoard(cardElement, targetBoardIndex, onComplete) {
+        if (this.cardAnimationSystem) {
+            return this.cardAnimationSystem.playCardToBoard(cardElement, targetBoardIndex, onComplete);
+        }
+        return Promise.resolve();
+    }
+
+    setCardAnimationSpeed(speed) {
+        if (this.cardAnimationSystem) {
+            this.cardAnimationSystem.setAnimationSpeed(speed);
+        }
+    }
+
+    setCardEffectsEnabled(enabled) {
+        if (this.cardAnimationSystem) {
+            this.cardAnimationSystem.setEffectsEnabled(enabled);
+        }
+    }
+
+    clearCardAnimations() {
+        if (this.cardAnimationSystem) {
+            this.cardAnimationSystem.clear();
+        }
+    }
+
+    // ⚔️ COMBAT EFFECTS API
+    triggerCombatHit(attackerPos, targetPos, weaponType, damage, isCritical = false) {
+        if (this.combatEffectsSystem) {
+            this.combatEffectsSystem.triggerCombatHit(attackerPos, targetPos, weaponType, damage, isCritical);
+        }
+    }
+
+    triggerScreenShake(intensity, duration) {
+        if (this.combatEffectsSystem) {
+            this.combatEffectsSystem.triggerScreenShake(intensity, duration);
+        }
+    }
+
+    clearCombatEffects() {
+        if (this.combatEffectsSystem) {
+            this.combatEffectsSystem.clear();
+        }
+    }
+
     // Utility methods
     clear() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -542,5 +623,10 @@ export class RenderEngine {
     resize(width, height) {
         this.canvas.width = width;
         this.canvas.height = height;
+
+        // Update card animation system with new canvas size
+        if (this.cardAnimationSystem) {
+            this.cardAnimationSystem.coordinateSystem = this.coordinateSystem;
+        }
     }
 }

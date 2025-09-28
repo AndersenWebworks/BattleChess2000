@@ -180,11 +180,15 @@ export class CoordinateSystem {
                 }
             }
         } else if (unit.weapon === 'BOW') {
-            // Archer: Straight lines range 3
-            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            // Archer: All directions range 2
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
 
             for (const [dx, dy] of directions) {
-                for (let range = 1; range <= 3; range++) {
+                for (let range = 1; range <= 2; range++) {
                     const toX = fromX + dx * range;
                     const toY = fromY + dy * range;
                     const toIndex = toY * 5 + toX;
