@@ -28,6 +28,13 @@ export class GameLogic {
         this.playerIndex = playerIndex;
     }
 
+    resetState() {
+        this.gameState = null;
+        this.playerIndex = null;
+        this.validMoves = null;
+        this.validTargets = null;
+    }
+
     // Card playing logic (parallel with movement/combat)
     tryPlayCard(tileIndex, cardIndex) {
         // Check if it's player's turn

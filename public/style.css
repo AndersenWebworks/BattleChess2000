@@ -84,6 +84,71 @@ body {
   box-shadow: 0 0 10px rgba(68, 255, 68, 0.5);
 }
 
+/* Turn Banner - Very prominent turn indicator */
+.turn-banner {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  height: 60px;
+  z-index: 90;
+  display: none; /* Hidden by default */
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.turn-banner.active {
+  display: flex; /* Show during game */
+}
+
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 30px;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  border: 3px solid;
+}
+
+/* Your turn styling */
+.turn-banner.my-turn .turn-indicator {
+  background: linear-gradient(45deg, #4CAF50, #66BB6A);
+  border-color: #2E7D32;
+  color: white;
+  animation: pulse-green 2s infinite;
+}
+
+/* Opponent's turn styling */
+.turn-banner.opponent-turn .turn-indicator {
+  background: linear-gradient(45deg, #f44336, #ef5350);
+  border-color: #c62828;
+  color: white;
+  animation: pulse-red 2s infinite;
+}
+
+/* Pulse animations */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3); }
+  50% { box-shadow: 0 4px 30px rgba(76, 175, 80, 0.8); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3); }
+  50% { box-shadow: 0 4px 30px rgba(244, 67, 54, 0.8); }
+}
+
+.turn-icon {
+  font-size: 24px;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+}
+
 /* Main game area */
 .game-board-container {
   flex: 1;
@@ -91,7 +156,7 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 80px 10px 120px 10px; /* Account for header and hand */
+  padding: 140px 10px 120px 10px; /* Account for header, turn banner and hand */
 }
 
 #gameCanvas {

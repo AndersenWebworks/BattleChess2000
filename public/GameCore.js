@@ -171,8 +171,31 @@ export class BattleChess2000 {
     }
 
     // Game actions
+    resetGame() {
+        // Reset all game state variables
+        this.gameState = null;
+        this.playerIndex = null;
+        this.playerName = null;
+        this.opponentName = null;
+        this.inGame = false;
+
+        // Clear UI selections and states
+        this.uiManager.clearCardSelection();
+        this.inputHandler.clearSelection();
+
+        // Reset game logic state
+        this.gameLogic.resetState();
+
+        // Clear any animations
+        this.animationSystem.clearAll();
+        this.combatAnimations.clearAll();
+
+        console.log('🔄 Game state reset for new match');
+    }
+
     findMatch() {
         try {
+            this.resetGame(); // Reset everything before finding new match
             this.networkManager.findMatch();
             this.uiManager.showSearchingMenu();
         } catch (error) {

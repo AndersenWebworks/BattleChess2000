@@ -14,6 +14,12 @@ export class AnimationSystem {
         return this.animations.length > 0 || this.particles.length > 0 || this.damageNumbers.length > 0;
     }
 
+    clearAll() {
+        this.animations = [];
+        this.particles = [];
+        this.damageNumbers = [];
+    }
+
     update() {
         const currentTime = Date.now();
 

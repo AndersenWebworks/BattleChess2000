@@ -16,6 +16,14 @@ export class CombatAnimations {
                this.hurtAnimations.length > 0;
     }
 
+    clearAll() {
+        this.deathAnimations = [];
+        this.hurtAnimations = [];
+        this.bloodPools = [];
+        this.weaponDrops = [];
+        this.corpses = [];
+    }
+
     checkForAttackAnimations(oldState, newState, animationSystem) {
         console.log('🔍 checkForAttackAnimations started');
         console.log('📊 Board comparison - oldState vs newState');

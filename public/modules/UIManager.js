@@ -68,6 +68,7 @@ export class UIManager {
     showMainMenu() {
         this.hideAllMenus();
         document.querySelector('.phase-control').classList.remove('game-active');
+        document.getElementById('turnBanner').classList.remove('active');
         this.inGame = false;
         document.getElementById('mainMenu').classList.remove('hidden');
     }
@@ -124,6 +125,7 @@ export class UIManager {
     startGame() {
         this.hideAllMenus();
         document.querySelector('.phase-control').classList.add('game-active');
+        document.getElementById('turnBanner').classList.add('active');
         this.inGame = true;
     }
 
@@ -153,6 +155,9 @@ export class UIManager {
             document.getElementById('gameStatus').style.color = '#f44336';
             document.getElementById('gameStatus').innerHTML += '<br><em>Opponent\'s turn</em>';
         }
+
+        // Update prominent turn banner
+        this.updateTurnBanner(isMyTurn);
 
         // Update End Turn button (always "End Turn")
         const endTurnBtn = document.getElementById('endPhaseBtn'); // Keep ID for compatibility
@@ -282,6 +287,25 @@ export class UIManager {
 
     setCardSelectCallback(callback) {
         this.onCardSelect = callback;
+    }
+
+    updateTurnBanner(isMyTurn) {
+        const banner = document.getElementById('turnBanner');
+        const text = document.getElementById('turnText');
+        const icon = document.getElementById('turnIcon');
+
+        // Remove previous turn classes
+        banner.classList.remove('my-turn', 'opponent-turn');
+
+        if (isMyTurn) {
+            banner.classList.add('my-turn');
+            text.textContent = 'DEIN ZUG';
+            icon.textContent = '⚔️';
+        } else {
+            banner.classList.add('opponent-turn');
+            text.textContent = 'GEGNER DRAN';
+            icon.textContent = '⏳';
+        }
     }
 
     // Status and debug display methods
