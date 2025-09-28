@@ -2,6 +2,7 @@
 // Part of BattleChess2000 modularization
 
 import { GameData } from './GameData.js';
+import { ActionGuidanceManager } from './ActionGuidanceManager.js';
 
 export class UIManager {
     constructor(canvas) {
@@ -13,6 +14,9 @@ export class UIManager {
         this.inGame = false;
         this.playerName = null;
         this.opponentName = null;
+
+        // Initialize UX Systems
+        this.actionGuidanceManager = new ActionGuidanceManager();
 
         this.setupCanvas();
         this.setupUI();
@@ -134,8 +138,14 @@ export class UIManager {
 
         const player = this.gameState.players[this.playerIndex];
 
-        // Update mana display
-        document.getElementById('manaDisplay').textContent = `Mana: ${player.mana}/${player.maxMana}`;
+        // Update HEARTHSTONE STYLE MANA GEMS
+        this.updateManaGems(player);
+
+        // Update EPIC ACTION GUIDANCE SYSTEM
+        this.actionGuidanceManager.updateGuidance(this.gameState, this.playerIndex, {
+            selectedCard: this.selectedCard,
+            selectedUnit: this.selectedUnit // We'll add this property
+        });
 
         // Update game status with turn number (no phases)
         const isMyTurn = this.gameState.currentTurn === this.playerIndex;
@@ -228,6 +238,7 @@ export class UIManager {
             </div>
         `;
 
+
         // Add click handler if card can be played
         if (canPlay) {
             cardDiv.addEventListener('click', () => {
@@ -269,6 +280,9 @@ export class UIManager {
 
         this.selectedCard = index;
 
+        // Update action guidance for card selection
+        this.actionGuidanceManager.setSelectedCard(index);
+
         console.log(`✅ Card selected: ${card.type} (Cost: ${card.cost})`);
         return true;
     }
@@ -283,6 +297,9 @@ export class UIManager {
             card.style.transform = '';
             card.classList.remove('selected');
         });
+
+        // Update action guidance for cleared selection
+        this.actionGuidanceManager.clearSelection();
     }
 
     setCardSelectCallback(callback) {
@@ -319,5 +336,59 @@ export class UIManager {
 
     showError(message) {
         alert(message);
+    }
+
+    // HEARTHSTONE STYLE MANA GEM SYSTEM
+    updateManaGems(player) {
+        if (!player) return;
+
+        const manaGemBar = document.getElementById('manaGemBar');
+        if (!manaGemBar) return;
+
+        // Generate mana gems if needed
+        if (manaGemBar.children.length !== player.maxMana) {
+            this.generateManaGems(player.maxMana);
+        }
+
+        // Update gem states
+        const gems = manaGemBar.querySelectorAll('.mana-gem');
+        gems.forEach((gem, index) => {
+            if (index < player.mana) {
+                gem.classList.remove('empty');
+                gem.classList.add('full');
+            } else {
+                gem.classList.remove('full');
+                gem.classList.add('empty');
+            }
+        });
+    }
+
+    generateManaGems(maxMana) {
+        const manaGemBar = document.getElementById('manaGemBar');
+        if (!manaGemBar) return;
+
+        manaGemBar.innerHTML = '';
+
+        for (let i = 0; i < maxMana; i++) {
+            const gem = document.createElement('div');
+            gem.className = 'mana-gem empty';
+
+            const gemShape = document.createElement('div');
+            gemShape.className = 'mana-gem-shape';
+
+            const gemShine = document.createElement('div');
+            gemShine.className = 'mana-gem-shine';
+
+            gem.appendChild(gemShape);
+            gem.appendChild(gemShine);
+            manaGemBar.appendChild(gem);
+        }
+    }
+
+    // Cleanup UX systems when destroying UIManager
+    destroy() {
+        if (this.actionGuidanceManager) {
+            this.actionGuidanceManager.destroy();
+        }
     }
 }

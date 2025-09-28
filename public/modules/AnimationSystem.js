@@ -7,17 +7,25 @@ export class AnimationSystem {
         this.animations = [];
         this.particles = [];
         this.damageNumbers = [];
+        this.weaponTrails = []; // BRUTAL weapon trails for medieval combat
+        this.screenShake = { active: false, intensity: 0, duration: 0, age: 0 };
+        this.impactFlashes = []; // Impact flash effects
         this.renderCallback = null;
     }
 
     hasActiveAnimations() {
-        return this.animations.length > 0 || this.particles.length > 0 || this.damageNumbers.length > 0;
+        return this.animations.length > 0 || this.particles.length > 0 ||
+               this.damageNumbers.length > 0 || this.weaponTrails.length > 0 ||
+               this.screenShake.active || this.impactFlashes.length > 0;
     }
 
     clearAll() {
         this.animations = [];
         this.particles = [];
         this.damageNumbers = [];
+        this.weaponTrails = [];
+        this.screenShake = { active: false, intensity: 0, duration: 0, age: 0 };
+        this.impactFlashes = [];
     }
 
     update() {
@@ -46,6 +54,31 @@ export class AnimationSystem {
             dmg.alpha = Math.max(0, 1 - dmg.age / dmg.lifetime);
             return dmg.age < dmg.lifetime;
         });
+
+        // Update BRUTAL weapon trails
+        this.weaponTrails = this.weaponTrails.filter(trail => {
+            trail.age += 16;
+            trail.alpha = Math.max(0, 1 - trail.age / trail.lifetime);
+            return trail.age < trail.lifetime;
+        });
+
+        // Update screen shake (combat impact)
+        if (this.screenShake.active) {
+            this.screenShake.age += 16;
+            this.screenShake.intensity = Math.max(0,
+                this.screenShake.intensity * (1 - this.screenShake.age / this.screenShake.duration)
+            );
+            if (this.screenShake.age >= this.screenShake.duration) {
+                this.screenShake.active = false;
+            }
+        }
+
+        // Update impact flashes
+        this.impactFlashes = this.impactFlashes.filter(flash => {
+            flash.age += 16;
+            flash.alpha = Math.max(0, 1 - flash.age / flash.lifetime);
+            return flash.age < flash.lifetime;
+        });
     }
 
     drawAnimations(ctx) {
@@ -66,16 +99,25 @@ export class AnimationSystem {
             ctx.fill();
         });
 
-        // Draw damage numbers
+        // Draw BRUTAL weapon trails
+        this.drawWeaponTrails(ctx);
+
+        // Draw impact flashes
+        this.drawImpactFlashes(ctx);
+
+        // Apply screen shake effect
+        this.applyScreenShake(ctx);
+
+        // Draw damage numbers (enhanced medieval style)
         this.damageNumbers.forEach(dmg => {
             const alpha = dmg.alpha || Math.max(0, 1 - dmg.age / (dmg.lifetime || 2000));
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
-            ctx.font = '20px Arial';
+            ctx.fillStyle = `rgba(255, 50, 50, ${alpha})`;
+            ctx.strokeStyle = `rgba(139, 0, 0, ${alpha})`;
+            ctx.font = 'bold 22px Cinzel';
             ctx.textAlign = 'center';
-            ctx.lineWidth = 2;
-            ctx.strokeText(dmg.damage.toString(), dmg.x, dmg.y);
-            ctx.fillText(dmg.damage.toString(), dmg.x, dmg.y);
+            ctx.lineWidth = 3;
+            ctx.strokeText(`-${dmg.damage}`, dmg.x, dmg.y);
+            ctx.fillText(`-${dmg.damage}`, dmg.x, dmg.y);
         });
     }
 
@@ -212,8 +254,19 @@ export class AnimationSystem {
 
         console.log(`✨ Animation added to queue, total animations: ${this.animations.length}`);
 
-        // Trigger impact particles
-        this.triggerParticles(toPos.x, toPos.y, 5, weaponAdvantage > 1.0 ? '#FFD700' : '#FF6B6B');
+        // TRIGGER BRUTAL WEAPON TRAIL
+        this.triggerWeaponTrail(fromPos.x, fromPos.y, toPos.x, toPos.y, weaponType);
+
+        // EPIC SCREEN SHAKE for heavy hits
+        const shakeIntensity = damage > 15 ? 15 : damage > 10 ? 10 : 5;
+        this.triggerScreenShake(shakeIntensity, 400);
+
+        // IMPACT FLASH on contact
+        this.triggerImpactFlash(toPos.x, toPos.y, 12);
+
+        // Trigger impact particles (more for brutal weapons)
+        const particleCount = weaponType === 'SWORD' ? 8 : weaponType === 'LANCE' ? 12 : 6;
+        this.triggerParticles(toPos.x, toPos.y, particleCount, weaponAdvantage > 1.0 ? '#FFD700' : '#FF6B6B');
 
         // Damage number with advantage coloring
         this.triggerDamageNumber(toPos.x, toPos.y - 20, damage);
@@ -246,5 +299,171 @@ export class AnimationSystem {
         this.animations = [];
         this.particles = [];
         this.damageNumbers = [];
+    }
+
+    // BRUTAL MEDIEVAL WEAPON TRAIL SYSTEM
+    drawWeaponTrails(ctx) {
+        this.weaponTrails.forEach(trail => {
+            ctx.save();
+            ctx.globalAlpha = trail.alpha;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (trail.weapon === 'SWORD') {
+                this.drawSwordTrail(ctx, trail);
+            } else if (trail.weapon === 'BOW') {
+                this.drawArrowTrail(ctx, trail);
+            } else if (trail.weapon === 'LANCE') {
+                this.drawLanceTrail(ctx, trail);
+            }
+
+            ctx.restore();
+        });
+    }
+
+    drawSwordTrail(ctx, trail) {
+        // Brutal bloody sword slash
+        const gradient = ctx.createLinearGradient(
+            trail.fromX, trail.fromY, trail.toX, trail.toY
+        );
+        gradient.addColorStop(0, `rgba(192, 192, 192, ${trail.alpha})`); // Silver blade
+        gradient.addColorStop(0.5, `rgba(255, 255, 255, ${trail.alpha * 0.8})`); // Flash
+        gradient.addColorStop(1, `rgba(139, 0, 0, ${trail.alpha * 0.6})`); // Blood
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 8;
+        ctx.shadowColor = '#ff0000';
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.moveTo(trail.fromX, trail.fromY);
+        ctx.lineTo(trail.toX, trail.toY);
+        ctx.stroke();
+
+        // Add sparks
+        for (let i = 0; i < 3; i++) {
+            const sparkX = trail.fromX + (trail.toX - trail.fromX) * Math.random();
+            const sparkY = trail.fromY + (trail.toY - trail.fromY) * Math.random();
+            ctx.fillStyle = `rgba(255, 255, 0, ${trail.alpha})`;
+            ctx.beginPath();
+            ctx.arc(sparkX, sparkY, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    drawArrowTrail(ctx, trail) {
+        // Whistling arrow trail
+        ctx.strokeStyle = `rgba(139, 69, 19, ${trail.alpha})`;
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#8B4513';
+        ctx.shadowBlur = 5;
+
+        ctx.beginPath();
+        ctx.moveTo(trail.fromX, trail.fromY);
+        ctx.lineTo(trail.toX, trail.toY);
+        ctx.stroke();
+
+        // Arrow head
+        const angle = Math.atan2(trail.toY - trail.fromY, trail.toX - trail.fromX);
+        const headLength = 15;
+
+        ctx.fillStyle = `rgba(139, 69, 19, ${trail.alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(trail.toX, trail.toY);
+        ctx.lineTo(
+            trail.toX - headLength * Math.cos(angle - Math.PI / 6),
+            trail.toY - headLength * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.lineTo(
+            trail.toX - headLength * Math.cos(angle + Math.PI / 6),
+            trail.toY - headLength * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    drawLanceTrail(ctx, trail) {
+        // Powerful lance thrust
+        const gradient = ctx.createLinearGradient(
+            trail.fromX, trail.fromY, trail.toX, trail.toY
+        );
+        gradient.addColorStop(0, `rgba(139, 69, 19, ${trail.alpha})`); // Brown shaft
+        gradient.addColorStop(0.8, `rgba(160, 82, 45, ${trail.alpha})`); // Lighter wood
+        gradient.addColorStop(1, `rgba(192, 192, 192, ${trail.alpha})`); // Metal tip
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 12;
+        ctx.shadowColor = '#654321';
+        ctx.shadowBlur = 8;
+
+        ctx.beginPath();
+        ctx.moveTo(trail.fromX, trail.fromY);
+        ctx.lineTo(trail.toX, trail.toY);
+        ctx.stroke();
+
+        // Power blast at impact
+        ctx.fillStyle = `rgba(255, 255, 255, ${trail.alpha * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(trail.toX, trail.toY, 15, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // EPIC IMPACT FLASHES
+    drawImpactFlashes(ctx) {
+        this.impactFlashes.forEach(flash => {
+            ctx.save();
+            ctx.globalAlpha = flash.alpha;
+
+            const size = flash.size * (1 + (1 - flash.alpha));
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#ffff00';
+            ctx.shadowBlur = 20;
+
+            ctx.beginPath();
+            ctx.arc(flash.x, flash.y, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        });
+    }
+
+    // SCREEN SHAKE FOR BRUTAL COMBAT
+    applyScreenShake(ctx) {
+        if (this.screenShake.active) {
+            const shakeX = (Math.random() - 0.5) * this.screenShake.intensity;
+            const shakeY = (Math.random() - 0.5) * this.screenShake.intensity;
+            ctx.translate(shakeX, shakeY);
+        }
+    }
+
+    // TRIGGER EPIC WEAPON TRAIL
+    triggerWeaponTrail(fromX, fromY, toX, toY, weapon) {
+        this.weaponTrails.push({
+            fromX, fromY, toX, toY,
+            weapon: weapon,
+            age: 0,
+            lifetime: weapon === 'SWORD' ? 800 : weapon === 'BOW' ? 600 : 1000,
+            alpha: 1.0
+        });
+    }
+
+    // TRIGGER SCREEN SHAKE
+    triggerScreenShake(intensity = 10, duration = 500) {
+        this.screenShake = {
+            active: true,
+            intensity: intensity,
+            duration: duration,
+            age: 0
+        };
+    }
+
+    // TRIGGER IMPACT FLASH
+    triggerImpactFlash(x, y, size = 10) {
+        this.impactFlashes.push({
+            x, y, size,
+            age: 0,
+            lifetime: 300,
+            alpha: 1.0
+        });
     }
 }

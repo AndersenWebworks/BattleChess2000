@@ -157,8 +157,8 @@ export class CombatAnimations {
             phaseStartTime: Date.now()
         });
 
-        // Create massive blood spray immediately for SWORD
-        let bloodCount = killerWeapon === 'SWORD' ? 15 : 8;
+        // Create BRUTAL blood spray - medieval combat is messy!
+        let bloodCount = killerWeapon === 'SWORD' ? 25 : killerWeapon === 'LANCE' ? 18 : 12;
         for (let i = 0; i < bloodCount; i++) {
             this.bloodPools.push({
                 x: centerX + (Math.random() - 0.5) * 60,
@@ -650,11 +650,11 @@ export class CombatAnimations {
             }
         });
 
-        // Blood pools fade very slowly
+        // Blood pools persist much longer (brutal medieval style)
         this.bloodPools.forEach(pool => {
-            pool.opacity = Math.max(0, pool.opacity - 0.0005);
+            pool.opacity = Math.max(0, pool.opacity - 0.0001); // 5x slower fade
         });
-        this.bloodPools = this.bloodPools.filter(pool => pool.opacity > 0.1);
+        this.bloodPools = this.bloodPools.filter(pool => pool.opacity > 0.05);
     }
 
     setGameState(gameState) {

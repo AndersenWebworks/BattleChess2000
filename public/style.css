@@ -1,4 +1,6 @@
-/* BattleChess2000 MVP - Mobile-First CSS */
+/* BattleChess2000 - BRUTAL MEDIEVAL COMBAT SIMULATOR */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&display=swap');
 
 * {
   margin: 0;
@@ -7,14 +9,45 @@
 }
 
 body {
-  font-family: 'Arial', sans-serif;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  color: white;
+  font-family: 'Cinzel', serif;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(139, 0, 0, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(85, 85, 85, 0.4) 0%, transparent 50%),
+    linear-gradient(135deg, #1a1a1a 0%, #2d1b0e 25%, #1a0a0a 75%, #000000 100%);
+  color: #d4af37;
   overflow: hidden;
-  touch-action: manipulation; /* Improve touch responsiveness */
-  user-select: none; /* Prevent text selection on touch */
+  touch-action: manipulation;
+  user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  position: relative;
+}
+
+/* Medieval atmospheric overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 69, 19, 0.02) 2px,
+      rgba(139, 69, 19, 0.02) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Main container */
@@ -28,14 +61,24 @@ body {
   position: relative;
 }
 
-/* Header UI */
+/* Medieval Battle Header */
 .game-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   height: 70px;
-  background: rgba(0, 0, 0, 0.7);
+  background:
+    linear-gradient(135deg,
+      rgba(45, 27, 14, 0.95) 0%,
+      rgba(26, 10, 10, 0.98) 50%,
+      rgba(0, 0, 0, 0.99) 100%
+    );
+  border-bottom: 3px solid #8b4513;
+  box-shadow:
+    0 2px 10px rgba(139, 0, 0, 0.5),
+    inset 0 1px 0 rgba(212, 175, 55, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
   display: grid;
   grid-template-columns: auto 1fr auto auto auto;
   grid-template-areas: "title status names mana connection";
@@ -43,13 +86,47 @@ body {
   gap: 10px;
   padding: 0 15px;
   z-index: 100;
+  position: relative;
+
+  /* Safe Area Support für moderne iPhones */
+  padding-top: env(safe-area-inset-top);
+  padding-left: max(15px, env(safe-area-inset-left));
+  padding-right: max(15px, env(safe-area-inset-right));
+  height: calc(70px + env(safe-area-inset-top));
+}
+
+/* Medieval battle-worn texture overlay */
+.game-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 1px,
+      rgba(139, 69, 19, 0.05) 1px,
+      rgba(139, 69, 19, 0.05) 2px
+    );
+  pointer-events: none;
 }
 
 .game-title {
   grid-area: title;
-  font-size: 18px;
-  font-weight: bold;
-  color: #FFD700;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #d4af37;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 10px rgba(212, 175, 55, 0.5),
+    0 0 20px rgba(139, 0, 0, 0.3);
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 2;
 }
 
 .game-status {
@@ -77,6 +154,18 @@ body {
   border: 2px solid #ffffff;
   box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
   transition: all 0.3s ease;
+  /* Touch target enhancement - invisible padding für 44px touch area */
+  position: relative;
+}
+
+.connection-status::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  /* 44px touch area (20px + 2*12px = 44px) */
 }
 
 .connection-status.connected {
@@ -87,7 +176,7 @@ body {
 /* Turn Banner - Very prominent turn indicator */
 .turn-banner {
   position: fixed;
-  top: 70px;
+  top: calc(70px + env(safe-area-inset-top)); /* Angepasst für Safe Area */
   left: 0;
   right: 0;
   height: 60px;
@@ -122,7 +211,7 @@ body {
   background: linear-gradient(45deg, #4CAF50, #66BB6A);
   border-color: #2E7D32;
   color: white;
-  animation: pulse-green 2s infinite;
+  box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
 }
 
 /* Opponent's turn styling */
@@ -130,19 +219,9 @@ body {
   background: linear-gradient(45deg, #f44336, #ef5350);
   border-color: #c62828;
   color: white;
-  animation: pulse-red 2s infinite;
+  box-shadow: 0 4px 20px rgba(244, 67, 54, 0.5);
 }
 
-/* Pulse animations */
-@keyframes pulse-green {
-  0%, 100% { box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3); }
-  50% { box-shadow: 0 4px 30px rgba(76, 175, 80, 0.8); }
-}
-
-@keyframes pulse-red {
-  0%, 100% { box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3); }
-  50% { box-shadow: 0 4px 30px rgba(244, 67, 54, 0.8); }
-}
 
 .turn-icon {
   font-size: 24px;
@@ -156,21 +235,62 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 140px 10px 120px 10px; /* Account for header, turn banner and hand */
+  padding: calc(140px + env(safe-area-inset-top)) 10px calc(120px + env(safe-area-inset-bottom)) 10px; /* Safe Area berücksichtigt */
 }
 
 #gameCanvas {
-  border: 2px solid #FFD700;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 4px solid #8b4513;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 30% 20%,
+      rgba(45, 27, 14, 0.3) 0%,
+      transparent 60%
+    ),
+    radial-gradient(circle at 70% 80%,
+      rgba(139, 0, 0, 0.2) 0%,
+      transparent 50%
+    ),
+    linear-gradient(135deg,
+      rgba(26, 10, 10, 0.8) 0%,
+      rgba(45, 27, 14, 0.6) 100%
+    );
+  backdrop-filter: blur(5px);
+  box-shadow:
+    0 0 30px rgba(139, 0, 0, 0.5),
+    0 8px 32px rgba(0, 0, 0, 0.7),
+    inset 0 2px 0 rgba(212, 175, 55, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    inset 2px 0 0 rgba(139, 69, 19, 0.3),
+    inset -2px 0 0 rgba(0, 0, 0, 0.3);
+  position: relative;
 
   /* Mobile-responsive canvas */
-  max-width: 90vw;
-  max-height: 60vh;
+  max-width: 95vw;
+  max-height: 50vh;
   width: auto;
   height: auto;
+  min-width: 280px;
+  min-height: 280px;
+}
+
+/* Medieval stone border effect */
+#gameCanvas::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      #8b4513,
+      #8b4513 2px,
+      #654321 2px,
+      #654321 4px
+    );
+  border-radius: 6px;
+  z-index: -1;
 }
 
 /* Phase Control */
@@ -187,18 +307,85 @@ body {
 }
 
 .btn-phase {
-  background: linear-gradient(145deg, #FF6B35, #E55529);
-  color: white;
-  border: 2px solid #FFD700;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: bold;
-  border-radius: 6px;
+  font-family: 'Cinzel', serif;
+  background:
+    linear-gradient(145deg,
+      #8b4513 0%,
+      #a0522d 20%,
+      #654321 80%,
+      #3e2723 100%
+    );
+  color: #d4af37;
+  border: 3px solid #d4af37;
+  border-radius: 8px;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 100px;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+
+  /* Enhanced medieval styling to match cards */
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.6),
+    inset 0 2px 0 rgba(212, 175, 55, 0.3),
+    inset 0 -2px 0 rgba(44, 24, 16, 0.8),
+    0 0 15px rgba(212, 175, 55, 0.2);
+
+  text-shadow:
+    1px 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 8px rgba(212, 175, 55, 0.5);
+  min-height: 44px; /* Touch-Target Mindestgröße */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* End Turn Button Texture */
+.btn-phase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(212, 175, 55, 0.05) 2px,
+      rgba(212, 175, 55, 0.05) 3px
+    );
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 6px;
+}
+
+/* End Turn Button Hover */
+.btn-phase:hover,
+.btn-phase:active {
+  transform: translateY(-2px) scale(1.02);
+  background:
+    linear-gradient(145deg,
+      #a0522d 0%,
+      #cd853f 20%,
+      #8b4513 80%,
+      #654321 100%
+    );
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.7),
+    0 0 30px rgba(212, 175, 55, 0.6),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 0 rgba(44, 24, 16, 0.9);
+  border-color: #fff;
+  color: #fff;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.9),
+    0 0 15px rgba(212, 175, 55, 0.8);
 }
 
 .btn-phase:hover,
@@ -216,65 +403,197 @@ body {
   opacity: 0.5;
 }
 
-/* Hand and UI at bottom */
+/* GOTHIC HORROR CARD HAND - NO SCROLL */
 .game-hand {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 120px;
-  background: rgba(0, 0, 0, 0.8);
+  height: calc(120px + env(safe-area-inset-bottom));
+  background: rgba(26, 10, 10, 0.98);
+  border-top: 3px solid #8b4513;
+  box-shadow: 0 -4px 20px rgba(139, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 10px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  padding-left: max(10px, env(safe-area-inset-left));
+  padding-right: max(10px, env(safe-area-inset-right));
   gap: 8px;
-  overflow-x: auto;
+  overflow: hidden; /* NO SCROLLING */
   z-index: 100;
+  position: relative;
 }
 
-/* Card styling */
+/* Gothic battle-worn texture for card hand */
+.game-hand::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 69, 19, 0.04) 2px,
+      rgba(139, 69, 19, 0.04) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Torch light effect from bottom */
+.game-hand::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 20%;
+  right: 20%;
+  height: 30px;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(255, 140, 0, 0.15) 0%,
+      rgba(255, 140, 0, 0.08) 50%,
+      transparent 100%
+    );
+  animation: handTorchFlicker 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes handTorchFlicker {
+  0%, 100% { opacity: 0.7; transform: scaleX(1); }
+  33% { opacity: 1; transform: scaleX(1.1); }
+  66% { opacity: 0.8; transform: scaleX(0.9); }
+}
+
+/* ENHANCED MEDIEVAL CARDS - SOLID COLORS */
 .card {
   min-width: 80px;
   width: 80px;
   height: 100px;
-  background: linear-gradient(145deg, #4a90e2, #357abd);
-  border: 2px solid #FFD700;
+  background: #3e2723;
+  border: 3px solid #d4af37;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   position: relative;
-  font-size: 12px;
-  font-weight: bold;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
   text-align: center;
+  color: #fff;
+  overflow: hidden;
+
+  /* Simplified shadows */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 
   /* Touch optimization */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Type-specific card colors */
-.card-scout {
-  background: linear-gradient(145deg, #4CAF50, #388E3C);
+/* Subtle texture overlay */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(212, 175, 55, 0.05) 2px,
+      rgba(212, 175, 55, 0.05) 3px
+    );
+  pointer-events: none;
+  border-radius: 6px;
+  z-index: 1;
 }
 
-.card-archer {
-  background: linear-gradient(145deg, #2196F3, #1976D2);
+/* Card Content Styling */
+.card-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 4px 8px;
+  margin-bottom: 2px;
 }
 
-.card-knight {
-  background: linear-gradient(145deg, #FF9800, #F57C00);
+.card-symbol {
+  font-size: 16px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.card-cost {
+  background: #d4af37;
+  color: #2c1810;
+  font-weight: 900;
+  font-size: 12px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.card-title {
+  position: relative;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 700;
+  color: #d4af37;
+  text-shadow:
+    1px 1px 2px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(212, 175, 55, 0.5);
+  margin: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-stats {
+  position: relative;
+  z-index: 2;
+  font-size: 9px;
+  color: #e8e8e8;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  line-height: 1.2;
+  text-align: center;
+  padding: 0 4px;
 }
 
 .card:hover,
 .card:active {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-  border-color: #ffffff;
+  transform: translateY(-12px);
+  background: #6d4c41;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.8);
+  border-color: #fff;
+  border-width: 4px;
+  z-index: 10;
+}
+
+.card:hover .card-title {
+  color: #fff;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.9),
+    0 0 15px rgba(212, 175, 55, 0.8);
 }
 
 .card.disabled {
@@ -296,6 +615,17 @@ body {
   justify-content: center;
   font-size: 10px;
   font-weight: bold;
+  /* Touch target enhancement */
+}
+
+.card .card-cost::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  /* 44px touch area für kleine Card-Cost-Kreise */
 }
 
 .card .card-weapon {
@@ -317,36 +647,427 @@ body {
 }
 
 .card .card-stats {
-  font-size: 8px;
+  font-size: 10px; /* Vergrößert von 8px für bessere Lesbarkeit */
   opacity: 0.9;
   line-height: 1.2;
 }
 
-/* Mana display */
-.mana-display {
+/* HEARTHSTONE STYLE MANA GEM SYSTEM */
+.mana-gem-container {
   grid-area: mana;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 5px 10px;
-  border-radius: 15px;
-  font-weight: bold;
-  color: #4FC3F7;
-  font-size: 14px;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  z-index: 2;
 }
 
-/* Menu screens */
+.mana-gem-bar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Individual Mana Gem */
+.mana-gem {
+  width: 24px;
+  height: 30px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Gem Shape (Diamond) */
+.mana-gem-shape {
+  width: 100%;
+  height: 100%;
+  background: #2196f3;
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  border: 2px solid #0d47a1;
+  box-shadow: 0 3px 8px rgba(13, 71, 161, 0.4);
+}
+
+/* Empty Gem State */
+.mana-gem.empty .mana-gem-shape {
+  background: rgba(101, 67, 33, 0.8);
+  border-color: #654321;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Full Gem with Glow */
+.mana-gem.full .mana-gem-shape {
+  background: #1565c0;
+  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.6);
+  animation: manaGemPulse 2s ease-in-out infinite;
+}
+
+/* Gem Shine Effect */
+.mana-gem-shine {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 8px;
+  height: 12px;
+  background:
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.2) 100%
+    );
+  clip-path: polygon(50% 0%, 100% 40%, 70% 100%, 0% 60%);
+  pointer-events: none;
+}
+
+/* Mana Gem Animations */
+@keyframes manaGemPulse {
+  0%, 100% {
+    box-shadow:
+      0 4px 12px rgba(13, 71, 161, 0.6),
+      0 0 20px rgba(33, 150, 243, 0.4),
+      inset 0 2px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -2px 0 rgba(13, 71, 161, 0.6);
+  }
+  50% {
+    box-shadow:
+      0 4px 12px rgba(13, 71, 161, 0.8),
+      0 0 30px rgba(33, 150, 243, 0.6),
+      inset 0 2px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -2px 0 rgba(13, 71, 161, 0.7);
+  }
+}
+
+/* Mana Gem Hover Effects */
+.mana-gem:hover .mana-gem-shape {
+  transform: scale(1.1);
+}
+
+.mana-gem.full:hover .mana-gem-shape {
+  box-shadow:
+    0 6px 16px rgba(13, 71, 161, 0.8),
+    0 0 35px rgba(33, 150, 243, 0.7),
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+
+/* VISUAL ACTION-GUIDANCE SYSTEM */
+/* Clear visual communication of what user can do */
+
+/* Action State Base Classes */
+.action-available {
+  position: relative;
+  overflow: visible;
+}
+
+.action-available::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, #4CAF50, #66BB6A, #4CAF50);
+  background-size: 200% 200%;
+  animation: actionAvailable 2s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.action-required {
+  position: relative;
+  overflow: visible;
+  animation: actionRequired 1.5s ease-in-out infinite;
+}
+
+.action-required::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, #FFD700, #FFF59D, #FFD700);
+  background-size: 200% 200%;
+  animation: actionRequired 1.5s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+.action-invalid {
+  position: relative;
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(0.7);
+}
+
+.action-invalid::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, #f44336, #ef5350, #f44336);
+  background-size: 200% 200%;
+  animation: actionInvalid 3s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Action Animations */
+@keyframes actionAvailable {
+  0%, 100% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+  }
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.8);
+  }
+}
+
+@keyframes actionRequired {
+  0%, 100% {
+    background-position: 0% 50%;
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
+  }
+}
+
+@keyframes actionInvalid {
+  0%, 100% {
+    background-position: 0% 50%;
+    opacity: 0.3;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 0.5;
+  }
+}
+
+/* Turn-based Action States */
+.my-turn {
+  --action-glow-color: #4CAF50;
+}
+
+.opponent-turn {
+  --action-glow-color: #f44336;
+}
+
+.waiting-for-action {
+  --action-glow-color: #FFD700;
+}
+
+/* Card Action States */
+.card.playable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card.playable:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow:
+    0 12px 25px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(76, 175, 80, 0.8);
+  border-color: #4CAF50;
+}
+
+.card.selected {
+  transform: translateY(-12px) scale(1.08);
+  box-shadow:
+    0 15px 30px rgba(0, 0, 0, 0.7),
+    0 0 25px rgba(255, 215, 0, 1);
+  border-color: #FFD700;
+  border-width: 3px;
+  z-index: 1000;
+}
+
+.card.unplayable {
+  opacity: 0.6;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+
+/* Button Action States */
+.btn.active-action {
+  background:
+    linear-gradient(145deg,
+      #4CAF50 0%,
+      #66BB6A 20%,
+      #43A047 80%,
+      #2E7D32 100%
+    );
+  box-shadow:
+    0 6px 15px rgba(0, 0, 0, 0.6),
+    0 0 25px rgba(76, 175, 80, 0.8);
+  animation: buttonPulse 2s ease-in-out infinite;
+}
+
+.btn.waiting-action {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background:
+    linear-gradient(145deg,
+      #666 0%,
+      #777 20%,
+      #555 80%,
+      #444 100%
+    );
+}
+
+@keyframes buttonPulse {
+  0%, 100% {
+    box-shadow:
+      0 6px 15px rgba(0, 0, 0, 0.6),
+      0 0 25px rgba(76, 175, 80, 0.8);
+  }
+  50% {
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.7),
+      0 0 35px rgba(76, 175, 80, 1);
+  }
+}
+
+/* Globe Action States */
+.globe-container.needs-attention::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #FF9800, #FFB74D, #FF9800);
+  background-size: 200% 200%;
+  animation: globeAttention 2s ease-in-out infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes globeAttention {
+  0%, 100% {
+    background-position: 0% 50%;
+    transform: scale(1);
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: scale(1.1);
+  }
+}
+
+/* Turn Banner Enhanced States */
+.turn-banner.active {
+  display: flex;
+  position: relative;
+}
+
+.turn-banner.my-turn {
+  background: rgba(76, 175, 80, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.turn-banner.opponent-turn {
+  background: rgba(244, 67, 54, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Canvas Action Overlays */
+#gameCanvas.has-actions {
+  cursor: pointer;
+  box-shadow:
+    0 0 30px rgba(139, 0, 0, 0.5),
+    0 8px 32px rgba(0, 0, 0, 0.7),
+    0 0 50px rgba(76, 175, 80, 0.4);
+}
+
+#gameCanvas.no-actions {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+/* Action Hints REMOVED - cleaner gameplay */
+
+/* GOTHIC HORROR MENU SCREENS - EMERGENCY FIXED */
 .menu-screen {
+  position: fixed; /* FIXED instead of absolute for better isolation */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(139, 0, 0, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(85, 85, 85, 0.15) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(26, 10, 10, 0.98) 0%, rgba(0, 0, 0, 0.99) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* MUCH HIGHER than anything else */
+  overflow: hidden; /* Prevent any scrollbars */
+}
+
+/* Subtle gothic stone texture overlay */
+.menu-screen::before {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 4px,
+      rgba(139, 69, 19, 0.01) 4px,
+      rgba(139, 69, 19, 0.01) 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 4px,
+      rgba(101, 67, 33, 0.008) 4px,
+      rgba(101, 67, 33, 0.008) 6px
+    );
+  pointer-events: none;
+  z-index: 0; /* Behind content */
+}
+
+/* Subtle flickering torch light effects */
+.menu-screen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 10% 10%,
+      rgba(255, 140, 0, 0.02) 0%,
+      transparent 20%
+    ),
+    radial-gradient(ellipse at 90% 10%,
+      rgba(255, 140, 0, 0.015) 0%,
+      transparent 15%
+    ),
+    radial-gradient(ellipse at 50% 90%,
+      rgba(139, 0, 0, 0.01) 0%,
+      transparent 25%
+    );
+  animation: torchFlicker 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0; /* Behind everything */
+}
+
+@keyframes torchFlicker {
+  0%, 100% { opacity: 0.3; }
+  25% { opacity: 0.4; }
+  50% { opacity: 0.35; }
+  75% { opacity: 0.45; }
 }
 
 .menu-screen.hidden {
@@ -354,11 +1075,44 @@ body {
 }
 
 .menu-title {
-  font-size: 28px;
-  font-weight: bold;
-  color: #FFD700;
-  margin-bottom: 20px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #d4af37;
+  margin-bottom: 25px;
   text-align: center;
+  position: relative;
+  z-index: 2;
+  text-shadow:
+    2px 2px 0 #8b4513,
+    4px 4px 8px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(212, 175, 55, 0.5),
+    0 0 40px rgba(139, 0, 0, 0.3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Gothic decorative elements for menu title */
+.menu-title::before {
+  content: '⚔️';
+  position: absolute;
+  left: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  color: #8b4513;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.menu-title::after {
+  content: '⚔️';
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%) scaleX(-1);
+  font-size: 24px;
+  color: #8b4513;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .menu-subtitle {
@@ -367,31 +1121,84 @@ body {
   margin-bottom: 40px;
   text-align: center;
   opacity: 0.8;
+  position: relative;
+  z-index: 3;
 }
 
-/* Buttons */
+/* Medieval Battle Buttons - SOLID COLORS */
 .btn {
-  background: linear-gradient(145deg, #4CAF50, #45a049);
-  color: white;
-  border: none;
+  font-family: 'Cinzel', serif;
+  background: #8b4513;
+  color: #d4af37;
+  border: 2px solid #8b4513;
+  border-radius: 4px;
   padding: 15px 30px;
-  font-size: 18px;
-  font-weight: bold;
-  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   margin: 10px;
   min-width: 200px;
+  position: relative;
+  overflow: hidden;
+  z-index: 3;
+
+  /* Simplified shadows */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 
   /* Touch optimization */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Simplified button texture - menu safe */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(212, 175, 55, 0.05) 2px,
+      rgba(212, 175, 55, 0.05) 3px
+    );
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.5; /* Much more subtle */
+}
+
+/* Menu buttons get extra visibility */
+.menu-screen .btn {
+  background:
+    linear-gradient(145deg,
+      #8b4513 0%,
+      #a0522d 20%,
+      #654321 80%,
+      #3e2723 100%
+    ) !important;
+  border: 3px solid #d4af37 !important;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(212, 175, 55, 0.4),
+    0 0 25px rgba(212, 175, 55, 0.3) !important;
+  z-index: 10 !important;
+}
+
 .btn:hover,
 .btn:active {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: #a0522d;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.6);
+  border-color: #d4af37;
+  color: #fff;
 }
 
 .btn:disabled {
@@ -413,26 +1220,110 @@ body {
   background: linear-gradient(145deg, #f44336, #d32f2f);
 }
 
-/* Loading states */
+/* GOTHIC LOADING STATES - FIXED Z-INDEX */
 .loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 15px;
+  position: relative;
+  z-index: 3; /* Above all gothic overlays */
 }
 
+/* Gothic spinning blade loader */
 .spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #ffffff;
-  border-top: 2px solid transparent;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(139, 69, 19, 0.3);
+  border-top: 3px solid #d4af37;
+  border-right: 3px solid #8b4513;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: gothicSpin 1.5s ease-in-out infinite;
+  box-shadow:
+    0 0 10px rgba(212, 175, 55, 0.5),
+    inset 0 0 10px rgba(139, 0, 0, 0.3);
+  position: relative;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Gothic rune in center */
+.spinner::before {
+  content: '⚔️';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: #d4af37;
+  text-shadow: 0 0 5px rgba(212, 175, 55, 0.8);
+  animation: runeGlow 2s ease-in-out infinite;
+}
+
+@keyframes gothicSpin {
+  0% {
+    transform: rotate(0deg);
+    box-shadow:
+      0 0 10px rgba(212, 175, 55, 0.5),
+      inset 0 0 10px rgba(139, 0, 0, 0.3);
+  }
+  50% {
+    transform: rotate(180deg);
+    box-shadow:
+      0 0 20px rgba(212, 175, 55, 0.8),
+      inset 0 0 15px rgba(139, 0, 0, 0.5);
+  }
+  100% {
+    transform: rotate(360deg);
+    box-shadow:
+      0 0 10px rgba(212, 175, 55, 0.5),
+      inset 0 0 10px rgba(139, 0, 0, 0.3);
+  }
+}
+
+@keyframes runeGlow {
+  0%, 100% {
+    color: #d4af37;
+    text-shadow: 0 0 5px rgba(212, 175, 55, 0.8);
+  }
+  50% {
+    color: #fff;
+    text-shadow: 0 0 15px rgba(212, 175, 55, 1);
+  }
+}
+
+/* SIMPLIFIED MENU CONTENT Z-INDEX FIXES */
+/* All menu screen content needs to be above gothic overlays */
+.menu-screen > * {
+  position: relative;
+  z-index: 5;
+}
+
+.menu-screen p,
+.menu-screen div,
+.menu-screen span {
+  position: relative;
+  z-index: 5;
+}
+
+/* Fix for inline styled elements in menu */
+.menu-screen div[style] {
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+/* Debug info styling - make less intrusive */
+#debugInfo {
+  position: relative;
+  z-index: 5;
+  opacity: 0.4 !important;
+  font-size: 10px !important;
+}
+
+/* Version text styling */
+.menu-screen div[style*="margin-top: 40px"] {
+  background: rgba(0, 0, 0, 0.3) !important;
+  padding: 10px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(139, 69, 19, 0.3) !important;
 }
 
 /* Mobile-specific optimizations */
@@ -446,8 +1337,52 @@ body {
     font-size: 16px;
   }
 
+  /* Header Grid Layout responsive für Mobile */
+  .game-header {
+    grid-template-columns: auto 1fr auto auto; /* 4 Spalten statt 5 */
+    grid-template-areas: "title status mana connection"; /* Player-Info ausgeblendet */
+  }
+
+  .player-info {
+    display: none; /* Auf kleinen Screens ausblenden */
+  }
+
+  .game-status {
+    font-size: 12px; /* Kleinere Schrift für mehr Platz */
+  }
+
+  .mana-display {
+    font-size: 12px; /* Kleinere Schrift */
+    padding: 4px 8px; /* Reduziertes Padding */
+  }
+
+  /* Turn-Banner Mobile Optimierung */
+  .turn-banner {
+    height: 50px; /* Reduziert von 60px */
+    top: 50px; /* Angepasst an kleineren Header */
+  }
+
+  .turn-indicator {
+    gap: 10px; /* Reduziert von 15px */
+    padding: 8px 20px; /* Reduziert von 12px 30px */
+    font-size: 16px; /* Reduziert von 20px */
+    letter-spacing: 1px; /* Reduziert von 2px */
+  }
+
+  .turn-icon {
+    font-size: 18px; /* Reduziert von 24px */
+  }
+
   .game-board-container {
-    padding: 80px 5px 110px 5px;
+    padding: 110px 5px 110px 5px; /* Angepasst für kleineres Turn-Banner */
+  }
+
+  /* Canvas Mobile-Optimierung */
+  #gameCanvas {
+    max-width: 98vw; /* Maximale Breite auf Mobile */
+    max-height: 45vh; /* Mehr Platz für andere UI-Elemente */
+    min-width: 260px; /* Kleineres Minimum für sehr kleine Geräte */
+    min-height: 260px;
   }
 
   .game-hand {
@@ -461,6 +1396,15 @@ body {
     width: 70px;
     height: 90px;
     font-size: 11px;
+  }
+
+  /* Card-Stats Mobile Readability */
+  .card .card-stats {
+    font-size: 9px; /* Minimum für Mobile, aber nicht kleiner als 9px */
+  }
+
+  .card .card-name {
+    font-size: 8px; /* Minimum für Card-Namen */
   }
 
   .menu-title {
@@ -480,8 +1424,25 @@ body {
     height: 40px;
   }
 
+  /* Turn-Banner Landscape-Optimierung */
+  .turn-banner {
+    height: 40px; /* Kompakter im Landscape */
+    top: 40px; /* Angepasst an kleineren Header */
+  }
+
+  .turn-indicator {
+    gap: 8px; /* Noch kompakter */
+    padding: 6px 15px; /* Reduziertes Padding */
+    font-size: 14px; /* Kleinere Schrift */
+    letter-spacing: 1px;
+  }
+
+  .turn-icon {
+    font-size: 16px; /* Kleineres Icon */
+  }
+
   .game-board-container {
-    padding: 50px 5px 90px 5px;
+    padding: 85px 5px 90px 5px; /* Angepasst für Turn-Banner */
   }
 
   .game-hand {
@@ -491,6 +1452,21 @@ body {
   .card {
     height: 70px;
     font-size: 10px;
+  }
+
+  /* Landscape Card Text Readability */
+  .card .card-stats {
+    font-size: 8px; /* Absolute minimum für Landscape */
+  }
+
+  .card .card-name {
+    font-size: 7px; /* Absolute minimum für Card-Namen im Landscape */
+  }
+
+  /* Canvas Landscape-Optimierung */
+  #gameCanvas {
+    max-height: 35vh; /* Weniger Höhe im Landscape */
+    max-width: 90vw;
   }
 }
 

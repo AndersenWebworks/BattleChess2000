@@ -37,8 +37,8 @@ class GameRoom {
         {
           id: player2.id,
           hand: this.createStartingHand(),
-          mana: 1,
-          maxMana: 1
+          mana: 2,
+          maxMana: 2
         }
       ]
     };
@@ -215,9 +215,17 @@ class GameRoom {
       // NEW ROUND - Increase mana for BOTH players (not per turn, but per round)
       console.log(`🌟 NEW ROUND ${this.turnNumber} - Increasing mana for all players`);
       this.gameState.players.forEach((player, index) => {
-        // Increase max mana (up to 10)
-        if (player.maxMana < 10) {
-          player.maxMana++;
+        // Increase max mana (up to 10), but player 2 always has +1
+        if (index === 0) {
+          // Player 1: normal progression
+          if (player.maxMana < 10) {
+            player.maxMana++;
+          }
+        } else {
+          // Player 2: starts with 2, then normal progression (+1 ahead)
+          if (player.maxMana < 10) {
+            player.maxMana++;
+          }
         }
 
         // Refill mana to max
