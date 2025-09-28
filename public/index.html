@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1e3c72">
+    <title>BattleChess2000 - The First Tactical Card Battler</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Game Container -->
+    <div class="game-container">
+
+        <!-- Game Header -->
+        <div class="game-header">
+            <div class="game-title">BattleChess2000</div>
+            <div class="game-status" id="gameStatus">Ready to Battle</div>
+            <div class="mana-display" id="manaDisplay">Mana: 1/1</div>
+            <div class="connection-status" id="connectionStatus"></div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="game-board-container">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <!-- Player Hand -->
+        <div class="game-hand" id="gameHand">
+            <!-- Cards will be dynamically generated here -->
+        </div>
+
+    </div>
+
+    <!-- Main Menu Screen -->
+    <div class="menu-screen" id="mainMenu">
+        <div class="menu-title">BattleChess2000</div>
+        <div class="menu-subtitle">The First Tactical Card Battler<br>Mobile-optimized • Online Multiplayer</div>
+
+        <button class="btn btn-primary" id="findMatchBtn">
+            <span class="btn-text">FIND MATCH</span>
+            <div class="loading hidden">
+                <div class="spinner"></div>
+                <span>Searching...</span>
+            </div>
+        </button>
+
+        <button class="btn btn-secondary" id="howToPlayBtn">HOW TO PLAY</button>
+
+        <div style="margin-top: 40px; text-align: center; opacity: 0.6; font-size: 12px;">
+            MVP v1.0 • Touch-optimized • Real-time Multiplayer<br>
+            <span id="debugInfo">Debug: Ready</span>
+        </div>
+    </div>
+
+    <!-- How to Play Screen -->
+    <div class="menu-screen hidden" id="howToPlayMenu">
+        <div class="menu-title">How to Play</div>
+
+        <div style="max-width: 300px; text-align: left; line-height: 1.6; margin-bottom: 30px;">
+            <p><strong>🎯 Goal:</strong> Destroy all enemy units</p><br>
+
+            <p><strong>🃏 Cards:</strong><br>
+            • Scout (1 mana): Fast, weak<br>
+            • Archer (3 mana): Ranged attacker<br>
+            • Knight (5 mana): Heavy hitter</p><br>
+
+            <p><strong>⚔️ Combat:</strong><br>
+            • Sword > Bow > Lance > Sword<br>
+            • +20% damage advantage</p><br>
+
+            <p><strong>📱 Controls:</strong><br>
+            • Tap card to spawn unit<br>
+            • Tap unit then tap destination<br>
+            • Tap enemy to attack</p>
+        </div>
+
+        <button class="btn btn-secondary" id="backToMenuBtn">BACK TO MENU</button>
+    </div>
+
+    <!-- Searching Screen -->
+    <div class="menu-screen hidden" id="searchingMenu">
+        <div class="menu-title">Finding Opponent</div>
+        <div class="loading">
+            <div class="spinner"></div>
+            <span>Searching for a worthy opponent...</span>
+        </div>
+        <button class="btn btn-danger" id="cancelSearchBtn">CANCEL</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div class="menu-screen hidden" id="gameOverMenu">
+        <div class="menu-title" id="gameOverTitle">Victory!</div>
+        <div class="menu-subtitle" id="gameOverSubtitle">You have proven your tactical superiority!</div>
+
+        <button class="btn btn-primary" id="playAgainBtn">PLAY AGAIN</button>
+        <button class="btn btn-secondary" id="mainMenuBtn">MAIN MENU</button>
+    </div>
+
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Game Logic -->
+    <script src="game.js"></script>
+</body>
+</html>

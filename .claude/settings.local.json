@@ -3,7 +3,10 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:en.wikipedia.org)",
-      "WebFetch(domain:fireemblem.fandom.com)"
+      "WebFetch(domain:fireemblem.fandom.com)",
+      "Bash(npm install)",
+      "Bash(npm start)",
+      "Bash(ipconfig)"
     ],
     "deny": [],
     "ask": []

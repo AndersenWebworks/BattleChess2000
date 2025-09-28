@@ -1,0 +1,357 @@
+/* BattleChess2000 MVP - Mobile-First CSS */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  color: white;
+  overflow: hidden;
+  touch-action: manipulation; /* Improve touch responsiveness */
+  user-select: none; /* Prevent text selection on touch */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Main container */
+.game-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Header UI */
+.game-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+}
+
+.game-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #FFD700;
+}
+
+.game-status {
+  font-size: 14px;
+  color: #ffffff;
+  text-align: center;
+  flex: 1;
+}
+
+.connection-status {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ff4444;
+  margin-left: 10px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+  transition: all 0.3s ease;
+}
+
+.connection-status.connected {
+  background: #44ff44;
+  box-shadow: 0 0 10px rgba(68, 255, 68, 0.5);
+}
+
+/* Main game area */
+.game-board-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 70px 10px 120px 10px; /* Account for header and hand */
+}
+
+#gameCanvas {
+  border: 2px solid #FFD700;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* Mobile-responsive canvas */
+  max-width: 90vw;
+  max-height: 60vh;
+  width: auto;
+  height: auto;
+}
+
+/* Hand and UI at bottom */
+.game-hand {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  gap: 8px;
+  overflow-x: auto;
+  z-index: 100;
+}
+
+/* Card styling */
+.card {
+  min-width: 80px;
+  width: 80px;
+  height: 100px;
+  background: linear-gradient(145deg, #4a90e2, #357abd);
+  border: 2px solid #FFD700;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+
+  /* Touch optimization */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card:hover,
+.card:active {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  border-color: #ffffff;
+}
+
+.card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.card .card-cost {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 20px;
+  height: 20px;
+  background: #ff6b35;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.card .card-name {
+  margin-top: 15px;
+  font-size: 10px;
+}
+
+.card .card-stats {
+  font-size: 8px;
+  opacity: 0.8;
+  margin-top: 5px;
+}
+
+/* Mana display */
+.mana-display {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-weight: bold;
+  color: #4FC3F7;
+}
+
+/* Menu screens */
+.menu-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.menu-screen.hidden {
+  display: none;
+}
+
+.menu-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #FFD700;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.menu-subtitle {
+  font-size: 16px;
+  color: #ffffff;
+  margin-bottom: 40px;
+  text-align: center;
+  opacity: 0.8;
+}
+
+/* Buttons */
+.btn {
+  background: linear-gradient(145deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 10px;
+  min-width: 200px;
+
+  /* Touch optimization */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:hover,
+.btn:active {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: linear-gradient(145deg, #4CAF50, #45a049);
+}
+
+.btn-secondary {
+  background: linear-gradient(145deg, #2196F3, #1976D2);
+}
+
+.btn-danger {
+  background: linear-gradient(145deg, #f44336, #d32f2f);
+}
+
+/* Loading states */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 480px) {
+  .game-header {
+    height: 50px;
+    padding: 0 15px;
+  }
+
+  .game-title {
+    font-size: 16px;
+  }
+
+  .game-board-container {
+    padding: 60px 5px 110px 5px;
+  }
+
+  .game-hand {
+    height: 110px;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .card {
+    min-width: 70px;
+    width: 70px;
+    height: 90px;
+    font-size: 11px;
+  }
+
+  .menu-title {
+    font-size: 24px;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    min-width: 180px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-header {
+    height: 40px;
+  }
+
+  .game-board-container {
+    padding: 50px 5px 90px 5px;
+  }
+
+  .game-hand {
+    height: 90px;
+  }
+
+  .card {
+    height: 70px;
+    font-size: 10px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  #gameCanvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
