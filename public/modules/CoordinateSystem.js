@@ -87,6 +87,23 @@ export class CoordinateSystem {
                     validMoves.push(toIndex);
                 }
             }
+        } else if (movementType === 'STRAIGHT_1') {
+            // Scout: Straight pattern - only 1 tile (no diagonal)
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+            for (const [dx, dy] of directions) {
+                const toX = fromX + dx;
+                const toY = fromY + dy;
+                const toIndex = toY * 5 + toX;
+
+                // Check bounds
+                if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) continue;
+
+                // Check if tile is empty
+                if (!gameBoard[toIndex]) {
+                    validMoves.push(toIndex);
+                }
+            }
         } else if (movementType === 'STRAIGHT') {
             // Archer: Rook pattern - straight lines 1-2 tiles
             const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
@@ -158,11 +175,9 @@ export class CoordinateSystem {
         const fromY = Math.floor(fromIndex / 5);
 
         if (unit.weapon === 'SWORD') {
-            // Scout: Melee range 1 (adjacent)
+            // Scout: Melee range 1 (straight only, no diagonal)
             const directions = [
-                [-1, -1], [-1, 0], [-1, 1],
-                [0, -1],           [0, 1],
-                [1, -1],  [1, 0],  [1, 1]
+                [-1, 0], [1, 0], [0, -1], [0, 1]
             ];
 
             for (const [dx, dy] of directions) {

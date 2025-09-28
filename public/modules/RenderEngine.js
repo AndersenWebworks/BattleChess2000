@@ -30,6 +30,12 @@ export class RenderEngine {
         this.unitRenderer = unitRenderer;
         this.animationSystem = animationSystem;
         this.combatAnimations = combatAnimations;
+
+        // Give AnimationSystem access to UnitRenderer for move animations
+        if (animationSystem && unitRenderer) {
+            animationSystem.setUnitRenderer(unitRenderer);
+        }
+
         // Replace internal combatEffectsSystem with external one
         if (combatEffectsSystem) {
             this.combatEffectsSystem = combatEffectsSystem;
@@ -536,6 +542,12 @@ export class RenderEngine {
 
         this.gameState.board.forEach((unit, boardIndex) => {
             if (unit) {
+                // Skip units that are currently being animated
+                if (this.animationSystem && this.animationSystem.isUnitAnimating &&
+                    this.animationSystem.isUnitAnimating(boardIndex)) {
+                    return; // Skip rendering this unit, it's being animated
+                }
+
                 const { x, y } = this.coordinateSystem.getVisualPosition(boardIndex);
 
                 // Draw unit with health-based effects

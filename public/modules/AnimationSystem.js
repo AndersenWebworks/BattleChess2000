@@ -8,6 +8,7 @@ export class AnimationSystem {
         this.particles = [];
         this.damageNumbers = [];
         this.weaponTrails = []; // BRUTAL weapon trails for medieval combat
+        this.moveAnimations = []; // Smooth movement animations
         this.screenShake = { active: false, intensity: 0, duration: 0, age: 0 };
         this.impactFlashes = []; // Impact flash effects
         this.renderCallback = null;
@@ -16,7 +17,8 @@ export class AnimationSystem {
     hasActiveAnimations() {
         return this.animations.length > 0 || this.particles.length > 0 ||
                this.damageNumbers.length > 0 || this.weaponTrails.length > 0 ||
-               this.screenShake.active || this.impactFlashes.length > 0;
+               this.moveAnimations.length > 0 || this.screenShake.active ||
+               this.impactFlashes.length > 0;
     }
 
     clearAll() {
@@ -24,6 +26,7 @@ export class AnimationSystem {
         this.particles = [];
         this.damageNumbers = [];
         this.weaponTrails = [];
+        this.moveAnimations = [];
         this.screenShake = { active: false, intensity: 0, duration: 0, age: 0 };
         this.impactFlashes = [];
     }
@@ -98,6 +101,9 @@ export class AnimationSystem {
             ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
             ctx.fill();
         });
+
+        // Draw movement animations
+        this.drawMoveAnimations(ctx);
 
         // Draw BRUTAL weapon trails
         this.drawWeaponTrails(ctx);
@@ -216,6 +222,40 @@ export class AnimationSystem {
         }
     }
 
+    // 🚶 Trigger smooth movement animation
+    triggerMoveAnimation(fromIndex, toIndex, unit) {
+        console.log(`🚶 Triggering move animation: ${fromIndex} -> ${toIndex} for ${unit.type}`);
+
+        const fromPos = this.coordinateSystem.getVisualPosition(fromIndex);
+        const toPos = this.coordinateSystem.getVisualPosition(toIndex);
+
+        // Center positions
+        const startX = fromPos.x + this.coordinateSystem.tileSize / 2;
+        const startY = fromPos.y + this.coordinateSystem.tileSize / 2;
+        const endX = toPos.x + this.coordinateSystem.tileSize / 2;
+        const endY = toPos.y + this.coordinateSystem.tileSize / 2;
+
+        this.moveAnimations.push({
+            unit: { ...unit }, // Copy unit data
+            fromIndex,
+            toIndex,
+            startX,
+            startY,
+            endX,
+            endY,
+            progress: 0,
+            duration: 400, // 400ms animation
+            startTime: Date.now()
+        });
+
+        console.log(`📍 Move animation: (${startX}, ${startY}) -> (${endX}, ${endY})`);
+    }
+
+    // Check if a unit is currently being animated
+    isUnitAnimating(unitIndex) {
+        return this.moveAnimations.some(anim => anim.toIndex === unitIndex);
+    }
+
     // Trigger attack animation when attack happens
     triggerAttackAnimation(attackerIndex, targetIndex, damage, weaponAdvantage) {
         console.log(`🎬 Triggering attack animation: ${attackerIndex} -> ${targetIndex}, damage: ${damage}`);
@@ -293,6 +333,46 @@ export class AnimationSystem {
 
     setRenderCallback(callback) {
         this.renderCallback = callback;
+    }
+
+    setUnitRenderer(unitRenderer) {
+        this.unitRenderer = unitRenderer;
+    }
+
+    // 🚶 Draw movement animations
+    drawMoveAnimations(ctx) {
+        this.moveAnimations.forEach((moveAnim, index) => {
+            const elapsed = Date.now() - moveAnim.startTime;
+            moveAnim.progress = Math.min(elapsed / moveAnim.duration, 1);
+
+            // Ease-out interpolation for natural movement
+            const easeProgress = 1 - Math.pow(1 - moveAnim.progress, 3);
+
+            // Calculate current position
+            const currentX = moveAnim.startX + (moveAnim.endX - moveAnim.startX) * easeProgress;
+            const currentY = moveAnim.startY + (moveAnim.endY - moveAnim.startY) * easeProgress;
+
+            // Draw unit at interpolated position
+            ctx.save();
+
+            // Translate to current animation position (offset from tile center)
+            const tileSize = this.coordinateSystem.tileSize;
+            const unitX = currentX - tileSize / 2;
+            const unitY = currentY - tileSize / 2;
+
+            // Render unit at animated position
+            if (this.unitRenderer) {
+                this.unitRenderer.drawUnit(moveAnim.unit, unitX, unitY, tileSize, ctx);
+            }
+
+            ctx.restore();
+
+            // Clean up completed animations
+            if (moveAnim.progress >= 1) {
+                this.moveAnimations.splice(index, 1);
+                console.log(`🏁 Move animation completed for ${moveAnim.unit.type}`);
+            }
+        });
     }
 
     clear() {

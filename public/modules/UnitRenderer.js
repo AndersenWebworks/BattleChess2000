@@ -100,7 +100,7 @@ export class UnitRenderer {
         ctx.beginPath();
         ctx.ellipse(centerX, centerY - size * 0.1, size * 0.25, size * 0.35, 0, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.strokeStyle = isOwn ? '#1B5E20' : '#B71C1C'; // Darker outline
+        ctx.strokeStyle = '#000000'; // Black outline for all players
         ctx.lineWidth = Math.max(1, scale * 2);
         ctx.stroke();
 
@@ -404,7 +404,7 @@ export class UnitRenderer {
         ctx.fill();
 
         // Hood shadow
-        ctx.fillStyle = isOwn ? '#7B1FA2' : '#C2185B';
+        ctx.fillStyle = '#444444'; // Dark gray shadow for all players
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.65, size * 0.25, Math.PI, 2 * Math.PI);
         ctx.fill();
@@ -439,7 +439,7 @@ export class UnitRenderer {
         }
 
         // Mystical robe
-        ctx.fillStyle = isOwn ? '#673AB7' : '#9C27B0';
+        ctx.fillStyle = '#663399'; // Purple robe for all mages
         ctx.beginPath();
         ctx.ellipse(centerX, centerY + size * 0.1, size * 0.3, size * 0.4, 0, 0, 2 * Math.PI);
         ctx.fill();

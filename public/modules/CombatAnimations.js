@@ -41,6 +41,12 @@ export class CombatAnimations {
                     const checkUnit = newState.board[j];
                     if (checkUnit && checkUnit.id === oldUnit.id) {
                         console.log(`🚶 Unit ${oldUnit.type} moved from ${i} to ${j} - not dead!`);
+
+                        // Trigger movement animation
+                        if (animationSystem && animationSystem.triggerMoveAnimation) {
+                            animationSystem.triggerMoveAnimation(i, j, oldUnit);
+                        }
+
                         unitMovedElsewhere = true;
                         break;
                     }

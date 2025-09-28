@@ -152,7 +152,7 @@ class GameRoom {
 
   createUnit(type, owner, position) {
     const unitTypes = {
-      SCOUT: { hp: 25, attack: 30, movement: 'ADJACENT', weapon: 'SWORD' },
+      SCOUT: { hp: 25, attack: 30, movement: 'STRAIGHT_1', weapon: 'SWORD' },
       ARCHER: { hp: 50, attack: 40, movement: 'STRAIGHT', weapon: 'BOW' },
       KNIGHT: { hp: 90, attack: 60, movement: 'ADJACENT', weapon: 'LANCE' },
       MAGE: { hp: 35, attack: 80, movement: 'DIAGONAL', weapon: 'STAFF' }
@@ -429,6 +429,23 @@ class GameRoom {
           validMoves.push(toIndex);
         }
       }
+    } else if (movementType === 'STRAIGHT_1') {
+      // Scout: Straight pattern - only 1 tile (no diagonal)
+      const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+      for (const [dx, dy] of directions) {
+        const toX = fromX + dx;
+        const toY = fromY + dy;
+        const toIndex = toY * 5 + toX;
+
+        // Check bounds
+        if (toX < 0 || toX >= 5 || toY < 0 || toY >= 5) continue;
+
+        // Check if tile is empty
+        if (!this.gameState.board[toIndex]) {
+          validMoves.push(toIndex);
+        }
+      }
     } else if (movementType === 'STRAIGHT') {
       // Archer: Rook pattern - straight lines 1-2 tiles
       const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
@@ -500,11 +517,9 @@ class GameRoom {
     const fromY = Math.floor(fromIndex / 5);
 
     if (unit.weapon === 'SWORD') {
-      // Scout: Melee range 1 (adjacent)
+      // Scout: Melee range 1 (straight only, no diagonal)
       const directions = [
-        [-1, -1], [-1, 0], [-1, 1],
-        [0, -1],           [0, 1],
-        [1, -1],  [1, 0],  [1, 1]
+        [-1, 0], [1, 0], [0, -1], [0, 1]
       ];
 
       for (const [dx, dy] of directions) {
