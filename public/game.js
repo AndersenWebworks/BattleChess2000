@@ -173,21 +173,22 @@ class BattleChess2000 {
 
         const tileX = Math.floor(x / this.tileSize);
         const tileY = Math.floor(y / this.tileSize);
-        const tileIndex = tileY * 4 + tileX;
+        const visualIndex = tileY * 4 + tileX;
+        const boardIndex = this.visualIndexToBoardIndex(visualIndex);
 
-        console.log(`Clicked tile ${tileX}, ${tileY} (index ${tileIndex})`);
+        console.log(`Clicked visual tile ${tileX}, ${tileY} (visual: ${visualIndex}, board: ${boardIndex})`);
 
         // Handle different actions based on current phase
         if (this.selectedCard !== null) {
             // Card Phase: Playing cards
-            this.tryPlayCard(tileIndex);
+            this.tryPlayCard(boardIndex);
         } else if (this.gameState && this.gameState.currentPhase === 'MOVEMENT') {
-            this.handleMovementClick(tileIndex);
+            this.handleMovementClick(boardIndex);
         } else if (this.gameState && this.gameState.currentPhase === 'COMBAT') {
-            this.handleCombatClick(tileIndex);
+            this.handleCombatClick(boardIndex);
         } else {
             // Default: Try to select a unit or show info
-            this.handleUnitClick(tileIndex);
+            this.handleUnitClick(boardIndex);
         }
     }
 
@@ -240,6 +241,35 @@ class BattleChess2000 {
         } else {
             return tileIndex >= 0 && tileIndex <= 3;   // Top row
         }
+    }
+
+    // Perspective transformation helpers
+    boardIndexToVisualIndex(boardIndex) {
+        // Convert board index to visual index based on player perspective
+        if (this.playerIndex === 0) {
+            // Player 0 sees board normally
+            return boardIndex;
+        } else {
+            // Player 1 sees board rotated 180 degrees
+            return 15 - boardIndex;
+        }
+    }
+
+    visualIndexToBoardIndex(visualIndex) {
+        // Convert visual index back to board index
+        if (this.playerIndex === 0) {
+            return visualIndex;
+        } else {
+            return 15 - visualIndex;
+        }
+    }
+
+    getVisualPosition(boardIndex) {
+        // Get visual x,y coordinates for rendering
+        const visualIndex = this.boardIndexToVisualIndex(boardIndex);
+        const x = (visualIndex % 4) * this.tileSize;
+        const y = Math.floor(visualIndex / 4) * this.tileSize;
+        return { x, y };
     }
 
     handleUnitClick(tileIndex) {
@@ -497,13 +527,13 @@ class BattleChess2000 {
         document.getElementById('searchingMenu').classList.remove('hidden');
     }
 
-    showGameOverMenu(winner) {
+    showGameOverMenu(isWinner) {
         this.hideAllMenus();
         const gameOverMenu = document.getElementById('gameOverMenu');
         const title = document.getElementById('gameOverTitle');
         const subtitle = document.getElementById('gameOverSubtitle');
 
-        if (winner === this.playerIndex) {
+        if (isWinner) {
             title.textContent = 'Victory!';
             subtitle.textContent = 'You have proven your tactical superiority!';
         } else {
@@ -586,14 +616,32 @@ class BattleChess2000 {
         const unitData = this.unitTypes[card.type];
         const canPlay = this.gameState.players[this.playerIndex].mana >= card.cost;
 
+        // Add type-specific class for styling
+        cardDiv.classList.add(`card-${card.type.toLowerCase()}`);
+
         if (!canPlay) {
             cardDiv.classList.add('disabled');
         }
 
+        // Get unit-specific symbol and weapon
+        let unitSymbol, weaponIcon;
+        if (card.type === 'SCOUT') {
+            unitSymbol = '🗡';
+            weaponIcon = '⚔️';
+        } else if (card.type === 'ARCHER') {
+            unitSymbol = '🏹';
+            weaponIcon = '🎯';
+        } else if (card.type === 'KNIGHT') {
+            unitSymbol = '🛡';
+            weaponIcon = '🗡️';
+        }
+
         cardDiv.innerHTML = `
             <div class="card-cost">${card.cost}</div>
+            <div class="card-weapon">${weaponIcon}</div>
+            <div class="card-symbol">${unitSymbol}</div>
             <div class="card-name">${card.type}</div>
-            <div class="card-stats">${unitData.hp}❤️ ${unitData.attack}⚔️</div>
+            <div class="card-stats">${unitData.hp}❤️ ${unitData.attack}⚔️ ${unitData.movement}🏃</div>
         `;
 
         cardDiv.addEventListener('click', () => {
@@ -678,25 +726,20 @@ class BattleChess2000 {
         this.ctx.fillStyle = 'rgba(244, 67, 54, 0.2)'; // Red for player 2
         this.ctx.fillRect(0, 0, this.canvas.width, this.tileSize);
 
-        // Label spawn zones
+        // Label spawn zones - always show player's spawn at bottom
         this.ctx.fillStyle = '#ffffff';
         this.ctx.font = `${this.tileSize / 8}px Arial`;
         this.ctx.textAlign = 'center';
 
-        if (this.playerIndex === 0) {
-            this.ctx.fillText('YOUR SPAWN', this.canvas.width / 2, 3.5 * this.tileSize);
-            this.ctx.fillText('ENEMY SPAWN', this.canvas.width / 2, 0.5 * this.tileSize);
-        } else {
-            this.ctx.fillText('ENEMY SPAWN', this.canvas.width / 2, 3.5 * this.tileSize);
-            this.ctx.fillText('YOUR SPAWN', this.canvas.width / 2, 0.5 * this.tileSize);
-        }
+        // Player's spawn is always visually at the bottom
+        this.ctx.fillText('YOUR SPAWN', this.canvas.width / 2, 3.5 * this.tileSize);
+        this.ctx.fillText('ENEMY SPAWN', this.canvas.width / 2, 0.5 * this.tileSize);
     }
 
     drawHighlights() {
         // Highlight selected unit
         if (this.selectedUnitIndex !== null) {
-            const x = (this.selectedUnitIndex % 4) * this.tileSize;
-            const y = Math.floor(this.selectedUnitIndex / 4) * this.tileSize;
+            const { x, y } = this.getVisualPosition(this.selectedUnitIndex);
 
             this.ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
             this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
@@ -709,9 +752,8 @@ class BattleChess2000 {
         // Highlight valid moves (green)
         if (this.validMoves) {
             this.ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-            this.validMoves.forEach(index => {
-                const x = (index % 4) * this.tileSize;
-                const y = Math.floor(index / 4) * this.tileSize;
+            this.validMoves.forEach(boardIndex => {
+                const { x, y } = this.getVisualPosition(boardIndex);
                 this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
 
                 this.ctx.strokeStyle = '#00FF00';
@@ -723,9 +765,8 @@ class BattleChess2000 {
         // Highlight valid attack targets (red)
         if (this.validTargets) {
             this.ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-            this.validTargets.forEach(index => {
-                const x = (index % 4) * this.tileSize;
-                const y = Math.floor(index / 4) * this.tileSize;
+            this.validTargets.forEach(boardIndex => {
+                const { x, y } = this.getVisualPosition(boardIndex);
                 this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
 
                 this.ctx.strokeStyle = '#FF0000';
@@ -736,11 +777,9 @@ class BattleChess2000 {
     }
 
     drawUnits() {
-        // TODO: Draw units on board (will implement when unit spawning is ready)
-        this.gameState.board.forEach((unit, index) => {
+        this.gameState.board.forEach((unit, boardIndex) => {
             if (unit) {
-                const x = (index % 4) * this.tileSize;
-                const y = Math.floor(index / 4) * this.tileSize;
+                const { x, y } = this.getVisualPosition(boardIndex);
                 this.drawUnit(unit, x, y);
             }
         });
@@ -749,31 +788,16 @@ class BattleChess2000 {
     drawUnit(unit, x, y) {
         const centerX = x + this.tileSize / 2;
         const centerY = y + this.tileSize / 2;
-        const radius = this.tileSize / 3;
+        const size = this.tileSize / 3;
 
-        const unitData = this.unitTypes[unit.type];
-
-        // Unit circle
-        this.ctx.fillStyle = unitData.color;
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        this.ctx.fill();
-
-        // Unit border (changes based on hasActed)
-        if (unit.hasActed) {
-            this.ctx.strokeStyle = unit.owner === this.playerIndex ? '#2E7D32' : '#C62828'; // Darker when acted
-            this.ctx.lineWidth = 2;
-        } else {
-            this.ctx.strokeStyle = unit.owner === this.playerIndex ? '#4CAF50' : '#F44336';
-            this.ctx.lineWidth = 3;
+        // Different shapes and colors for each unit type
+        if (unit.type === 'SCOUT') {
+            this.drawScout(centerX, centerY, size, unit);
+        } else if (unit.type === 'ARCHER') {
+            this.drawArcher(centerX, centerY, size, unit);
+        } else if (unit.type === 'KNIGHT') {
+            this.drawKnight(centerX, centerY, size, unit);
         }
-        this.ctx.stroke();
-
-        // Unit type text
-        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
-        this.ctx.font = `bold ${this.tileSize / 8}px Arial`;
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText(unit.type[0], centerX, centerY + 5);
 
         // HP bar
         const barWidth = this.tileSize * 0.8;
@@ -800,9 +824,18 @@ class BattleChess2000 {
 
         // Action indicator
         if (unit.hasActed) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.beginPath();
-            this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            if (unit.type === 'SCOUT') {
+                this.ctx.arc(centerX, centerY, size, 0, 2 * Math.PI);
+            } else if (unit.type === 'ARCHER') {
+                this.ctx.moveTo(centerX, centerY - size);
+                this.ctx.lineTo(centerX - size, centerY + size);
+                this.ctx.lineTo(centerX + size, centerY + size);
+                this.ctx.closePath();
+            } else if (unit.type === 'KNIGHT') {
+                this.ctx.rect(centerX - size, centerY - size, size * 2, size * 2);
+            }
             this.ctx.fill();
 
             this.ctx.fillStyle = '#FFFF00';
@@ -811,18 +844,81 @@ class BattleChess2000 {
         }
     }
 
+    drawScout(centerX, centerY, radius, unit) {
+        // Scout: Fast green circle with sword symbol
+        const isOwn = unit.owner === this.playerIndex;
+
+        // Main circle - bright green
+        this.ctx.fillStyle = isOwn ? '#4CAF50' : '#8BC34A';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        this.ctx.fill();
+
+        // Border
+        this.ctx.strokeStyle = unit.hasActed ? '#2E7D32' : (isOwn ? '#1B5E20' : '#F44336');
+        this.ctx.lineWidth = unit.hasActed ? 2 : 3;
+        this.ctx.stroke();
+
+        // Sword symbol
+        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
+        this.ctx.font = `bold ${radius * 0.8}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('🗡', centerX, centerY + radius * 0.3);
+    }
+
+    drawArcher(centerX, centerY, size, unit) {
+        // Archer: Blue triangle with bow symbol
+        const isOwn = unit.owner === this.playerIndex;
+
+        // Triangle shape
+        this.ctx.fillStyle = isOwn ? '#2196F3' : '#64B5F6';
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, centerY - size);
+        this.ctx.lineTo(centerX - size, centerY + size);
+        this.ctx.lineTo(centerX + size, centerY + size);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Border
+        this.ctx.strokeStyle = unit.hasActed ? '#1565C0' : (isOwn ? '#0D47A1' : '#F44336');
+        this.ctx.lineWidth = unit.hasActed ? 2 : 3;
+        this.ctx.stroke();
+
+        // Bow symbol
+        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
+        this.ctx.font = `bold ${size * 0.7}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('🏹', centerX, centerY + size * 0.3);
+    }
+
+    drawKnight(centerX, centerY, size, unit) {
+        // Knight: Orange square with shield symbol
+        const isOwn = unit.owner === this.playerIndex;
+
+        // Square shape
+        this.ctx.fillStyle = isOwn ? '#FF9800' : '#FFB74D';
+        this.ctx.fillRect(centerX - size, centerY - size, size * 2, size * 2);
+
+        // Border
+        this.ctx.strokeStyle = unit.hasActed ? '#E65100' : (isOwn ? '#BF360C' : '#F44336');
+        this.ctx.lineWidth = unit.hasActed ? 2 : 3;
+        this.ctx.strokeRect(centerX - size, centerY - size, size * 2, size * 2);
+
+        // Shield symbol
+        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
+        this.ctx.font = `bold ${size * 0.7}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('🛡', centerX, centerY + size * 0.3);
+    }
+
     drawUI() {
         // Additional UI elements can be drawn here
         if (this.selectedCard !== null) {
             // Draw spawn zone highlights for selected card
             this.ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
 
-            // Highlight spawn zones where card can be played
-            if (this.playerIndex === 0) {
-                this.ctx.fillRect(0, 3 * this.tileSize, this.canvas.width, this.tileSize);
-            } else {
-                this.ctx.fillRect(0, 0, this.canvas.width, this.tileSize);
-            }
+            // Always highlight bottom row (player's spawn zone visually)
+            this.ctx.fillRect(0, 3 * this.tileSize, this.canvas.width, this.tileSize);
         }
     }
 
