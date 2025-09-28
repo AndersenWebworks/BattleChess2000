@@ -54,8 +54,9 @@ export class UnitRenderer {
 
     // Emotional Warrior System - Base model with facial expressions and equipment
     drawEmotionalWarrior(ctx, centerX, centerY, size, unit) {
-        // Fixed colors: Player 0 = Red, Player 1 = Blue
-        const playerColor = unit.owner === 0 ? '#f44336' : '#2196F3';
+        // SEHR DEUTLICHE Spielerfarben für klare Unterscheidung
+        const playerColor = unit.owner === 0 ? '#00FF00' : '#FF0000'; // Grün vs. Rot
+        const isPlayer = unit.owner === this.playerIndex;
         const scale = size / 25;
 
         // Determine emotional state
@@ -63,22 +64,43 @@ export class UnitRenderer {
         if (unit.hasActed) emotion = 'tired';
         if (unit.currentHp < unit.maxHp * 0.3) emotion = 'hurt';
 
-        // Base warrior body
-        this.drawWarriorBody(ctx, centerX, centerY, size, playerColor, emotion);
+        // DEUTLICHE Gegner-Markierung
+        if (!isPlayer) {
+            // Großer roter Kreis um Gegner
+            ctx.strokeStyle = '#FF0000';
+            ctx.lineWidth = 6;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size * 0.7, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        } else {
+            // Grüner Kreis um eigene Units
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 4;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size * 0.65, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Base warrior body (with unit type for different body shapes)
+        this.drawWarriorBody(ctx, centerX, centerY, size, playerColor, emotion, unit.type, isPlayer);
 
         // Equipment based on unit type
-        this.drawWarriorEquipment(ctx, centerX, centerY, size, unit.type, playerColor);
+        this.drawWarriorEquipment(ctx, centerX, centerY, size, unit.type, playerColor, isPlayer);
     }
 
-    drawWarriorBody(ctx, centerX, centerY, size, playerColor, emotion) {
+    drawWarriorBody(ctx, centerX, centerY, size, playerColor, emotion, unitType = 'KNIGHT', isPlayer = true) {
         const scale = size / 25;
 
         // Player-specific colors for clear identification
-        const skinColor = '#FFDBAC'; // Skin tone
-        const eyeColor = '#000000';
+        const skinColor = isPlayer ? '#FFDBAC' : '#8B7355'; // Eigene: helle Haut, Gegner: dunkle Haut
+        const eyeColor = isPlayer ? '#000000' : '#FF0000'; // Eigene: schwarze Augen, Gegner: rote Augen
 
-        // Use player color for body
-        const bodyColor = playerColor;
+        // Use player color for body with high contrast
+        const bodyColor = isPlayer ? '#00AA00' : '#CC0000'; // Satte Farben für bessere Sichtbarkeit
 
         // HEAD - Larger and more expressive
         ctx.fillStyle = skinColor;
@@ -95,49 +117,88 @@ export class UnitRenderer {
         // MOUTH - Emotional expression
         this.drawWarriorMouth(ctx, centerX, centerY - size * 0.6, size, emotion);
 
-        // BODY - Rounded torso
+        // BODY - Different shapes based on unit type
         ctx.fillStyle = bodyColor;
         ctx.beginPath();
-        ctx.ellipse(centerX, centerY - size * 0.1, size * 0.25, size * 0.35, 0, 0, 2 * Math.PI);
+
+        if (unitType === 'SCOUT') {
+            // Scout: Schlanker, agiler Körper
+            ctx.ellipse(centerX, centerY - size * 0.1, size * 0.2, size * 0.38, 0, 0, 2 * Math.PI);
+        } else if (unitType === 'ARCHER') {
+            // Archer: Breiter für Stabilität beim Schießen
+            ctx.ellipse(centerX, centerY - size * 0.1, size * 0.28, size * 0.32, 0, 0, 2 * Math.PI);
+        } else if (unitType === 'KNIGHT') {
+            // Knight: Breiter, massiver Körper
+            ctx.ellipse(centerX, centerY - size * 0.1, size * 0.3, size * 0.35, 0, 0, 2 * Math.PI);
+        } else {
+            // Mage/Default: Normal
+            ctx.ellipse(centerX, centerY - size * 0.1, size * 0.25, size * 0.35, 0, 0, 2 * Math.PI);
+        }
+
         ctx.fill();
         ctx.strokeStyle = '#000000'; // Black outline for all players
         ctx.lineWidth = Math.max(1, scale * 2);
         ctx.stroke();
 
-        // ARMS - Rounded
+        // ARMS - Different sizes based on unit type
         ctx.fillStyle = skinColor;
         ctx.strokeStyle = '#8B4513';
         ctx.lineWidth = Math.max(1, scale * 1.5);
 
+        const armSize = unitType === 'SCOUT' ? size * 0.1 :
+                       unitType === 'ARCHER' ? size * 0.13 :
+                       unitType === 'KNIGHT' ? size * 0.15 : size * 0.12;
+
         // Left arm
         ctx.beginPath();
-        ctx.arc(centerX - size * 0.4, centerY - size * 0.1, size * 0.12, 0, 2 * Math.PI);
+        ctx.arc(centerX - size * 0.4, centerY - size * 0.1, armSize, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
 
         // Right arm
         ctx.beginPath();
-        ctx.arc(centerX + size * 0.4, centerY - size * 0.1, size * 0.12, 0, 2 * Math.PI);
+        ctx.arc(centerX + size * 0.4, centerY - size * 0.1, armSize, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
 
-        // LEGS - Rounded thighs and shins
+        // LEGS - Different based on unit type
+        const legWidth = unitType === 'SCOUT' ? size * 0.08 :
+                        unitType === 'ARCHER' ? size * 0.11 :
+                        unitType === 'KNIGHT' ? size * 0.12 : size * 0.1;
+
         // Left leg
         ctx.beginPath();
-        ctx.ellipse(centerX - size * 0.15, centerY + size * 0.35, size * 0.1, size * 0.25, 0, 0, 2 * Math.PI);
+        ctx.ellipse(centerX - size * 0.15, centerY + size * 0.35, legWidth, size * 0.25, 0, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
 
         // Right leg
         ctx.beginPath();
-        ctx.ellipse(centerX + size * 0.15, centerY + size * 0.35, size * 0.1, size * 0.25, 0, 0, 2 * Math.PI);
+        ctx.ellipse(centerX + size * 0.15, centerY + size * 0.35, legWidth, size * 0.25, 0, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
 
-        // FEET - Simple boots
-        ctx.fillStyle = '#654321';
-        ctx.fillRect(centerX - size * 0.2, centerY + size * 0.55, size * 0.1, size * 0.15);
-        ctx.fillRect(centerX + size * 0.1, centerY + size * 0.55, size * 0.1, size * 0.15);
+        // FEET - Different boots based on unit type
+        if (unitType === 'SCOUT') {
+            // Scout: Leichte, wendige Stiefel
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(centerX - size * 0.18, centerY + size * 0.55, size * 0.08, size * 0.12);
+            ctx.fillRect(centerX + size * 0.1, centerY + size * 0.55, size * 0.08, size * 0.12);
+        } else if (unitType === 'ARCHER') {
+            // Archer: Stabile Waldläufer-Stiefel
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(centerX - size * 0.2, centerY + size * 0.55, size * 0.1, size * 0.15);
+            ctx.fillRect(centerX + size * 0.1, centerY + size * 0.55, size * 0.1, size * 0.15);
+            // Grüne Akzente
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(centerX - size * 0.19, centerY + size * 0.56, size * 0.08, size * 0.03);
+            ctx.fillRect(centerX + size * 0.11, centerY + size * 0.56, size * 0.08, size * 0.03);
+        } else {
+            // Knight/Default: Normale Stiefel
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(centerX - size * 0.2, centerY + size * 0.55, size * 0.1, size * 0.15);
+            ctx.fillRect(centerX + size * 0.1, centerY + size * 0.55, size * 0.1, size * 0.15);
+        }
     }
 
     drawWarriorEyes(ctx, centerX, centerY, size, emotion) {
@@ -271,88 +332,200 @@ export class UnitRenderer {
         ctx.stroke();
     }
 
-    drawWarriorEquipment(ctx, centerX, centerY, size, unitType, playerColor) {
+    drawWarriorEquipment(ctx, centerX, centerY, size, unitType, playerColor, isPlayer = true) {
         if (unitType === 'SCOUT') {
-            this.drawScoutEquipment(ctx, centerX, centerY, size, playerColor);
+            this.drawScoutEquipment(ctx, centerX, centerY, size, playerColor, isPlayer);
         } else if (unitType === 'ARCHER') {
-            this.drawArcherEquipment(ctx, centerX, centerY, size, playerColor);
+            this.drawArcherEquipment(ctx, centerX, centerY, size, playerColor, isPlayer);
         } else if (unitType === 'KNIGHT') {
-            this.drawKnightEquipment(ctx, centerX, centerY, size, playerColor);
+            this.drawKnightEquipment(ctx, centerX, centerY, size, playerColor, isPlayer);
         } else if (unitType === 'MAGE') {
-            this.drawMageEquipment(ctx, centerX, centerY, size, playerColor);
+            this.drawMageEquipment(ctx, centerX, centerY, size, playerColor, isPlayer);
         }
     }
 
-    drawScoutEquipment(ctx, centerX, centerY, size, playerColor) {
-        // Player-colored scout helm
-        ctx.fillStyle = playerColor;
+    drawScoutEquipment(ctx, centerX, centerY, size, playerColor, isPlayer = true) {
+        // Charakteristische Scout-Kappe (flacher als Helm)
+        const capColor = isPlayer ? '#654321' : '#2F1B14'; // Braun vs. sehr dunkles Braun
+        ctx.fillStyle = capColor;
         ctx.beginPath();
-        ctx.arc(centerX, centerY - size * 0.6, size * 0.32, Math.PI, 2 * Math.PI);
+        ctx.ellipse(centerX, centerY - size * 0.6, size * 0.35, size * 0.2, 0, Math.PI, 2 * Math.PI);
         ctx.fill();
-
-        // Small sword at side
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(centerX + size * 0.45, centerY - size * 0.2);
-        ctx.lineTo(centerX + size * 0.45, centerY + size * 0.15);
+        ctx.strokeStyle = isPlayer ? '#8B4513' : '#000000';
+        ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Sword hilt
-        ctx.strokeStyle = '#8B4513';
+        // Deutliche Spielerfarben-Markierung an der Kappe
+        ctx.fillStyle = isPlayer ? '#00FF00' : '#FF0000';
+        ctx.fillRect(centerX - size * 0.15, centerY - size * 0.65, size * 0.3, size * 0.1);
+
+        // Leichte Lederrüstung über der Brust
+        ctx.fillStyle = '#8B4513'; // Dunkelbraunes Leder
+        ctx.strokeStyle = '#654321';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(centerX + size * 0.4, centerY + size * 0.15);
-        ctx.lineTo(centerX + size * 0.5, centerY + size * 0.15);
-        ctx.stroke();
-    }
-
-    drawArcherEquipment(ctx, centerX, centerY, size, playerColor) {
-        // Player-colored archer helm with feather
-        ctx.fillStyle = playerColor;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY - size * 0.6, size * 0.32, Math.PI, 2 * Math.PI);
+        ctx.ellipse(centerX, centerY - size * 0.15, size * 0.22, size * 0.25, 0, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.stroke();
 
-        // Feather on helm
-        ctx.strokeStyle = '#4CAF50';
+        // Lederriemen der Rüstung
+        ctx.strokeStyle = '#654321';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(centerX + size * 0.2, centerY - size * 0.8);
-        ctx.lineTo(centerX + size * 0.15, centerY - size * 0.9);
+        ctx.moveTo(centerX - size * 0.15, centerY - size * 0.25);
+        ctx.lineTo(centerX + size * 0.15, centerY - size * 0.25);
+        ctx.moveTo(centerX - size * 0.15, centerY - size * 0.05);
+        ctx.lineTo(centerX + size * 0.15, centerY - size * 0.05);
         ctx.stroke();
 
-        // Bow on left shoulder
-        ctx.strokeStyle = '#8B4513';
+        // GROßES Schwert am Rücken (diagonal)
+        ctx.strokeStyle = '#C0C0C0'; // Silberne Klinge
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(centerX - size * 0.2, centerY - size * 0.5);
+        ctx.lineTo(centerX - size * 0.35, centerY + size * 0.2);
+        ctx.stroke();
+
+        // Schwertgriff
+        ctx.strokeStyle = '#8B4513'; // Brauner Griff
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(centerX - size * 0.18, centerY - size * 0.52);
+        ctx.lineTo(centerX - size * 0.15, centerY - size * 0.45);
+        ctx.stroke();
+
+        // Schwert-Parierstange
+        ctx.strokeStyle = '#FFD700'; // Gold
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(centerX - size * 0.5, centerY - size * 0.2, size * 0.25, -Math.PI/3, Math.PI/3, false);
+        ctx.moveTo(centerX - size * 0.25, centerY - size * 0.48);
+        ctx.lineTo(centerX - size * 0.11, centerY - size * 0.48);
         ctx.stroke();
 
-        // Quiver on back
+        // Scout-Beutel an der Hüfte
         ctx.fillStyle = '#654321';
-        ctx.fillRect(centerX + size * 0.25, centerY - size * 0.4, size * 0.12, size * 0.3);
-
-        // Arrow tips sticking out
-        for (let i = 0; i < 3; i++) {
-            const arrowX = centerX + size * 0.27 + i * size * 0.03;
-            const arrowY = centerY - size * 0.42;
-            ctx.fillStyle = '#C0C0C0';
-            ctx.beginPath();
-            ctx.arc(arrowX, arrowY, size * 0.02, 0, 2 * Math.PI);
-            ctx.fill();
-        }
+        ctx.fillRect(centerX + size * 0.25, centerY + size * 0.1, size * 0.15, size * 0.2);
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(centerX + size * 0.25, centerY + size * 0.1, size * 0.15, size * 0.2);
     }
 
-    drawKnightEquipment(ctx, centerX, centerY, size, playerColor) {
+    drawArcherEquipment(ctx, centerX, centerY, size, playerColor, isPlayer = true) {
+        // Charakteristischer Archer-Hut mit markanter Feder
+        const hatColor = isPlayer ? '#228B22' : '#0F2F0F'; // Waldgrün vs. sehr dunkles Grün
+        ctx.fillStyle = hatColor;
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY - size * 0.6, size * 0.38, size * 0.25, 0, Math.PI, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = isPlayer ? '#006400' : '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // DEUTLICHE Spielerfarben-Markierung am Hut
+        ctx.fillStyle = isPlayer ? '#00FF00' : '#FF0000';
+        ctx.fillRect(centerX - size * 0.35, centerY - size * 0.62, size * 0.7, size * 0.08);
+
+        // Große, auffällige Feder
+        ctx.strokeStyle = '#FF6347'; // Tomatenrot für Sichtbarkeit
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(centerX + size * 0.25, centerY - size * 0.7);
+        ctx.lineTo(centerX + size * 0.35, centerY - size * 0.95);
+        ctx.stroke();
+
+        // Feder-Details
+        ctx.strokeStyle = '#FF4500';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 4; i++) {
+            const featherY = centerY - size * 0.75 - i * size * 0.05;
+            ctx.beginPath();
+            ctx.moveTo(centerX + size * 0.28, featherY);
+            ctx.lineTo(centerX + size * 0.32, featherY);
+            ctx.stroke();
+        }
+
+        // GROßER, markanter Bogen über die Schulter
+        ctx.strokeStyle = '#8B4513'; // Dunkelbraun
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.arc(centerX - size * 0.6, centerY - size * 0.1, size * 0.4, -Math.PI/2.5, Math.PI/2.5, false);
+        ctx.stroke();
+
+        // Bogensehne
+        ctx.strokeStyle = '#F5DEB3'; // Beige Sehne
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const bowTop = { x: centerX - size * 0.45, y: centerY - size * 0.45 };
+        const bowBottom = { x: centerX - size * 0.45, y: centerY + size * 0.25 };
+        ctx.moveTo(bowTop.x, bowTop.y);
+        ctx.lineTo(bowBottom.x, bowBottom.y);
+        ctx.stroke();
+
+        // Großer, markanter Köcher am Rücken
+        ctx.fillStyle = '#654321'; // Braunes Leder
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 3;
+        ctx.fillRect(centerX + size * 0.2, centerY - size * 0.5, size * 0.2, size * 0.5);
+        ctx.strokeRect(centerX + size * 0.2, centerY - size * 0.5, size * 0.2, size * 0.5);
+
+        // Köcher-Riemen
+        ctx.strokeStyle = '#654321';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(centerX + size * 0.3, centerY - size * 0.5);
+        ctx.lineTo(centerX - size * 0.1, centerY - size * 0.3);
+        ctx.lineTo(centerX + size * 0.3, centerY);
+        ctx.stroke();
+
+        // Viele sichtbare Pfeilspitzen
+        for (let i = 0; i < 6; i++) {
+            const arrowX = centerX + size * 0.23 + (i % 3) * size * 0.05;
+            const arrowY = centerY - size * 0.52 - Math.floor(i / 3) * size * 0.03;
+
+            // Pfeilspitze
+            ctx.fillStyle = '#C0C0C0'; // Silber
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - size * 0.02, arrowY + size * 0.04);
+            ctx.lineTo(arrowX + size * 0.02, arrowY + size * 0.04);
+            ctx.closePath();
+            ctx.fill();
+
+            // Pfeilschaft (teilweise sichtbar)
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY + size * 0.04);
+            ctx.lineTo(arrowX, arrowY + size * 0.08);
+            ctx.stroke();
+        }
+
+        // Grüne Lederarmschienen (Archer-typisch)
+        ctx.fillStyle = '#228B22';
+        ctx.strokeStyle = '#006400';
+        ctx.lineWidth = 2;
+        // Linker Arm
+        ctx.fillRect(centerX - size * 0.45, centerY - size * 0.2, size * 0.1, size * 0.15);
+        ctx.strokeRect(centerX - size * 0.45, centerY - size * 0.2, size * 0.1, size * 0.15);
+        // Rechter Arm
+        ctx.fillRect(centerX + size * 0.35, centerY - size * 0.2, size * 0.1, size * 0.15);
+        ctx.strokeRect(centerX + size * 0.35, centerY - size * 0.2, size * 0.1, size * 0.15);
+    }
+
+    drawKnightEquipment(ctx, centerX, centerY, size, playerColor, isPlayer = true) {
         // Player-colored heavy helm with visor
-        ctx.fillStyle = playerColor;
+        const helmColor = isPlayer ? '#C0C0C0' : '#404040'; // Silber vs. dunkles Grau
+        ctx.fillStyle = helmColor;
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.6, size * 0.35, Math.PI, 2 * Math.PI);
         ctx.fill();
 
+        // DEUTLICHE Spielerfarben-Markierung am Helm
+        ctx.fillStyle = isPlayer ? '#00FF00' : '#FF0000';
+        ctx.fillRect(centerX - size * 0.3, centerY - size * 0.7, size * 0.6, size * 0.1);
+
         // Visor line
-        ctx.strokeStyle = '#BF360C';
+        ctx.strokeStyle = isPlayer ? '#BF360C' : '#000000';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(centerX - size * 0.25, centerY - size * 0.65);
@@ -396,15 +569,20 @@ export class UnitRenderer {
         ctx.fill();
     }
 
-    drawMageEquipment(ctx, centerX, centerY, size, playerColor) {
+    drawMageEquipment(ctx, centerX, centerY, size, playerColor, isPlayer = true) {
         // Player-colored mystical hood
-        ctx.fillStyle = playerColor;
+        const hoodColor = isPlayer ? '#663399' : '#2D1B69'; // Lila vs. dunkles Lila
+        ctx.fillStyle = hoodColor;
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.6, size * 0.35, Math.PI, 2 * Math.PI);
         ctx.fill();
 
+        // DEUTLICHE Spielerfarben-Markierung an der Kapuze
+        ctx.fillStyle = isPlayer ? '#00FF00' : '#FF0000';
+        ctx.fillRect(centerX - size * 0.3, centerY - size * 0.7, size * 0.6, size * 0.08);
+
         // Hood shadow
-        ctx.fillStyle = '#444444'; // Dark gray shadow for all players
+        ctx.fillStyle = isPlayer ? '#444444' : '#1A1A1A'; // Schatten je nach Spieler
         ctx.beginPath();
         ctx.arc(centerX, centerY - size * 0.65, size * 0.25, Math.PI, 2 * Math.PI);
         ctx.fill();
