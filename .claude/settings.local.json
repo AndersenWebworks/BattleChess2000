@@ -6,7 +6,11 @@
       "WebFetch(domain:fireemblem.fandom.com)",
       "Bash(npm install)",
       "Bash(npm start)",
-      "Bash(ipconfig)"
+      "Bash(ipconfig)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npm start:*)"
     ],
     "deny": [],
     "ask": []

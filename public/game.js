@@ -101,12 +101,30 @@ class BattleChess2000 {
         });
 
         this.socket.on('gameStarted', (data) => {
-            console.log('Game started:', data);
+            console.log('🎮 Game started:', data);
             this.gameState = data.gameState;
             this.playerIndex = data.yourPlayerIndex;
+            this.playerName = data.yourName;
+            this.opponentName = data.opponentName;
+
+            console.log(`You are: ${this.playerName}`);
+            console.log(`Opponent: ${this.opponentName}`);
+
             this.hideAllMenus();
             this.updateGameState();
             this.render();
+        });
+
+        this.socket.on('gameUpdate', (newGameState) => {
+            console.log('🔄 Game state updated:', newGameState);
+            this.gameState = newGameState;
+            this.updateGameState();
+            this.render();
+        });
+
+        this.socket.on('gameError', (data) => {
+            console.log('❌ Game error:', data.message);
+            alert(data.message); // Simple error display for MVP
         });
 
         // Test message for validation
@@ -149,7 +167,61 @@ class BattleChess2000 {
 
         console.log(`Clicked tile ${tileX}, ${tileY} (index ${tileIndex})`);
 
-        // Handle tile selection logic (will implement in next phase)
+        // Handle card playing
+        if (this.selectedCard !== null) {
+            this.tryPlayCard(tileIndex);
+        }
+    }
+
+    tryPlayCard(tileIndex) {
+        // Check if it's player's turn
+        if (this.gameState.currentTurn !== this.playerIndex) {
+            console.log('❌ Not your turn!');
+            return;
+        }
+
+        // Check if tile is in player's spawn zone
+        const isValidSpawn = this.isValidSpawnZone(tileIndex);
+        if (!isValidSpawn) {
+            console.log('❌ You can only spawn units in your spawn zone!');
+            return;
+        }
+
+        // Check if tile is empty
+        if (this.gameState.board[tileIndex] !== null) {
+            console.log('❌ Tile already occupied!');
+            return;
+        }
+
+        const player = this.gameState.players[this.playerIndex];
+        const card = player.hand[this.selectedCard];
+
+        console.log(`🎯 Playing card: ${card.type} at tile ${tileIndex}`);
+
+        // Send play card event to server
+        this.socket.emit('playCard', {
+            cardIndex: this.selectedCard,
+            tileIndex: tileIndex
+        });
+
+        // Clear selection
+        this.selectedCard = null;
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.transform = '';
+            card.classList.remove('selected');
+        });
+        this.render();
+    }
+
+    isValidSpawnZone(tileIndex) {
+        // Player 0 spawn zone: row 3 (tiles 12-15)
+        // Player 1 spawn zone: row 0 (tiles 0-3)
+
+        if (this.playerIndex === 0) {
+            return tileIndex >= 12 && tileIndex <= 15; // Bottom row
+        } else {
+            return tileIndex >= 0 && tileIndex <= 3;   // Top row
+        }
     }
 
     findMatch() {
@@ -224,9 +296,18 @@ class BattleChess2000 {
         // Update mana display
         document.getElementById('manaDisplay').textContent = `Mana: ${player.mana}/${player.maxMana}`;
 
-        // Update game status
+        // Update game status with turn number and phase
         const isMyTurn = this.gameState.currentTurn === this.playerIndex;
-        document.getElementById('gameStatus').textContent = isMyTurn ? 'Your Turn' : 'Opponent\'s Turn';
+        const phase = this.gameState.currentPhase || 'CARD';
+        const turnText = isMyTurn ? 'Your Turn' : 'Opponent\'s Turn';
+        const phaseText = phase === 'CARD' ? 'Card Phase' : phase === 'MOVEMENT' ? 'Move Phase' : 'Combat Phase';
+
+        document.getElementById('gameStatus').textContent = `${turnText} - ${phaseText}`;
+
+        // Update player info
+        if (this.playerName && this.opponentName) {
+            document.getElementById('playerInfo').textContent = `${this.playerName} vs ${this.opponentName}`;
+        }
 
         // Update hand
         this.updateHand();
@@ -272,17 +353,38 @@ class BattleChess2000 {
     }
 
     selectCard(index) {
+        // Check if it's player's turn
+        if (this.gameState.currentTurn !== this.playerIndex) {
+            console.log('Not your turn!');
+            return;
+        }
+
+        const player = this.gameState.players[this.playerIndex];
+        const card = player.hand[index];
+
+        // Check if player has enough mana
+        if (player.mana < card.cost) {
+            console.log(`Not enough mana! Need ${card.cost}, have ${player.mana}`);
+            return;
+        }
+
         // Remove previous selection
         document.querySelectorAll('.card').forEach(card => {
             card.style.transform = '';
+            card.classList.remove('selected');
         });
 
         // Highlight selected card
         const cardElement = document.querySelector(`[data-card-index="${index}"]`);
         cardElement.style.transform = 'translateY(-10px)';
+        cardElement.classList.add('selected');
 
         this.selectedCard = index;
-        console.log(`Selected card ${index}:`, this.gameState.players[this.playerIndex].hand[index]);
+        console.log(`✅ Selected card ${index}:`, card);
+        console.log('💡 Now click on your spawn zone to place the unit!');
+
+        // Re-render to show spawn zone highlights
+        this.render();
     }
 
     // Canvas Rendering

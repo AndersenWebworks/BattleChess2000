@@ -34,34 +34,46 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 70px;
   background: rgba(0, 0, 0, 0.7);
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-areas: "title status names mana connection";
   align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
+  gap: 10px;
+  padding: 0 15px;
   z-index: 100;
 }
 
 .game-title {
+  grid-area: title;
   font-size: 18px;
   font-weight: bold;
   color: #FFD700;
 }
 
 .game-status {
+  grid-area: status;
   font-size: 14px;
   color: #ffffff;
   text-align: center;
-  flex: 1;
+}
+
+.player-info {
+  grid-area: names;
+  font-size: 12px;
+  color: #ffffff;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0.8;
 }
 
 .connection-status {
+  grid-area: connection;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   background: #ff4444;
-  margin-left: 10px;
   border: 2px solid #ffffff;
   box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
   transition: all 0.3s ease;
@@ -79,7 +91,7 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 70px 10px 120px 10px; /* Account for header and hand */
+  padding: 80px 10px 120px 10px; /* Account for header and hand */
 }
 
 #gameCanvas {
@@ -178,14 +190,14 @@ body {
 
 /* Mana display */
 .mana-display {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  grid-area: mana;
   background: rgba(0, 0, 0, 0.7);
   padding: 5px 10px;
   border-radius: 15px;
   font-weight: bold;
   color: #4FC3F7;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 /* Menu screens */
@@ -301,7 +313,7 @@ body {
   }
 
   .game-board-container {
-    padding: 60px 5px 110px 5px;
+    padding: 80px 5px 110px 5px;
   }
 
   .game-hand {
