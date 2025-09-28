@@ -78,6 +78,7 @@ class BattleChess2000 {
         document.getElementById('cancelSearchBtn').onclick = () => this.cancelSearch();
         document.getElementById('playAgainBtn').onclick = () => this.findMatch();
         document.getElementById('mainMenuBtn').onclick = () => this.showMainMenu();
+        document.getElementById('endPhaseBtn').onclick = () => this.endPhase();
     }
 
     setupSocketEvents() {
@@ -111,6 +112,9 @@ class BattleChess2000 {
             console.log(`Opponent: ${this.opponentName}`);
 
             this.hideAllMenus();
+            // Show phase control in game
+            document.querySelector('.phase-control').classList.add('game-active');
+            this.inGame = true;
             this.updateGameState();
             this.render();
         });
@@ -125,6 +129,12 @@ class BattleChess2000 {
         this.socket.on('gameError', (data) => {
             console.log('❌ Game error:', data.message);
             alert(data.message); // Simple error display for MVP
+        });
+
+        this.socket.on('gameOver', (data) => {
+            console.log('🏆 Game Over!', data);
+            const isWinner = data.winner === this.playerIndex;
+            this.showGameOverMenu(isWinner);
         });
 
         // Test message for validation
@@ -167,9 +177,17 @@ class BattleChess2000 {
 
         console.log(`Clicked tile ${tileX}, ${tileY} (index ${tileIndex})`);
 
-        // Handle card playing
+        // Handle different actions based on current phase
         if (this.selectedCard !== null) {
+            // Card Phase: Playing cards
             this.tryPlayCard(tileIndex);
+        } else if (this.gameState && this.gameState.currentPhase === 'MOVEMENT') {
+            this.handleMovementClick(tileIndex);
+        } else if (this.gameState && this.gameState.currentPhase === 'COMBAT') {
+            this.handleCombatClick(tileIndex);
+        } else {
+            // Default: Try to select a unit or show info
+            this.handleUnitClick(tileIndex);
         }
     }
 
@@ -224,6 +242,203 @@ class BattleChess2000 {
         }
     }
 
+    handleUnitClick(tileIndex) {
+        const unit = this.gameState.board[tileIndex];
+        if (unit) {
+            console.log(`🎯 Clicked on ${unit.type} (Owner: ${unit.owner}, HP: ${unit.currentHp}/${unit.maxHp})`);
+
+            // In any phase, show unit info
+            this.selectedUnit = unit;
+            this.selectedUnitIndex = tileIndex;
+            this.render();
+        } else {
+            console.log('📍 Empty tile clicked');
+            this.selectedUnit = null;
+            this.selectedUnitIndex = null;
+            this.render();
+        }
+    }
+
+    handleMovementClick(tileIndex) {
+        // Check if it's player's turn
+        if (this.gameState.currentTurn !== this.playerIndex) {
+            console.log('❌ Not your turn!');
+            return;
+        }
+
+        const unit = this.gameState.board[tileIndex];
+
+        if (unit && unit.owner === this.playerIndex) {
+            // Selecting own unit for movement
+            if (!unit.hasActed) {
+                console.log(`🚶 Selected ${unit.type} for movement`);
+                this.selectedUnit = unit;
+                this.selectedUnitIndex = tileIndex;
+                this.showMovementOptions(unit, tileIndex);
+            } else {
+                console.log(`❌ ${unit.type} has already moved this turn`);
+            }
+        } else if (this.selectedUnit && this.selectedUnitIndex !== null) {
+            // Moving selected unit to new position
+            this.tryMoveUnit(this.selectedUnitIndex, tileIndex);
+        } else {
+            console.log('❌ No unit selected for movement');
+        }
+    }
+
+    handleCombatClick(tileIndex) {
+        // Check if it's player's turn
+        if (this.gameState.currentTurn !== this.playerIndex) {
+            console.log('❌ Not your turn!');
+            return;
+        }
+
+        const unit = this.gameState.board[tileIndex];
+
+        if (unit && unit.owner === this.playerIndex && !unit.hasActed) {
+            // Selecting own unit for combat
+            console.log(`⚔️ Selected ${unit.type} for combat`);
+            this.selectedUnit = unit;
+            this.selectedUnitIndex = tileIndex;
+            this.showAttackOptions(unit, tileIndex);
+        } else if (this.selectedUnit && this.selectedUnitIndex !== null) {
+            // Attacking with selected unit
+            this.tryAttackUnit(this.selectedUnitIndex, tileIndex);
+        } else {
+            console.log('❌ No unit selected for combat');
+        }
+    }
+
+    showMovementOptions(unit, fromIndex) {
+        console.log(`🔍 Showing movement options for ${unit.type} (Movement: ${unit.movement})`);
+
+        // Calculate valid movement tiles
+        this.validMoves = this.calculateValidMoves(fromIndex, unit.movement);
+
+        console.log(`📍 Valid moves: ${this.validMoves.join(', ')}`);
+        this.render(); // Re-render to show highlighted tiles
+    }
+
+    calculateValidMoves(fromIndex, movementPoints) {
+        const validMoves = [];
+        const fromX = fromIndex % 4;
+        const fromY = Math.floor(fromIndex / 4);
+
+        // Check all tiles within movement range
+        for (let dy = -movementPoints; dy <= movementPoints; dy++) {
+            for (let dx = -movementPoints; dx <= movementPoints; dx++) {
+                const distance = Math.abs(dx) + Math.abs(dy); // Manhattan distance
+
+                if (distance === 0 || distance > movementPoints) continue;
+
+                const toX = fromX + dx;
+                const toY = fromY + dy;
+                const toIndex = toY * 4 + toX;
+
+                // Check bounds
+                if (toX < 0 || toX >= 4 || toY < 0 || toY >= 4) continue;
+
+                // Check if tile is empty
+                if (!this.gameState.board[toIndex]) {
+                    validMoves.push(toIndex);
+                }
+            }
+        }
+
+        return validMoves;
+    }
+
+    tryMoveUnit(fromIndex, toIndex) {
+        // Validate move
+        if (!this.validMoves || !this.validMoves.includes(toIndex)) {
+            console.log('❌ Invalid move target');
+            return;
+        }
+
+        console.log(`🚶 Moving unit from ${fromIndex} to ${toIndex}`);
+
+        // Send move to server
+        this.socket.emit('moveUnit', {
+            fromIndex: fromIndex,
+            toIndex: toIndex
+        });
+
+        // Clear selection
+        this.selectedUnit = null;
+        this.selectedUnitIndex = null;
+        this.validMoves = null;
+    }
+
+    showAttackOptions(unit, fromIndex) {
+        console.log(`🎯 Showing attack options for ${unit.type} (Weapon: ${unit.weapon})`);
+
+        // Calculate valid attack targets
+        this.validTargets = this.calculateValidTargets(fromIndex, unit);
+
+        console.log(`⚔️ Valid targets: ${this.validTargets.join(', ')}`);
+        this.render(); // Re-render to show highlighted tiles
+    }
+
+    calculateValidTargets(fromIndex, unit) {
+        const validTargets = [];
+        const fromX = fromIndex % 4;
+        const fromY = Math.floor(fromIndex / 4);
+
+        // Different attack ranges based on weapon
+        let range = 1; // Default melee range
+        if (unit.weapon === 'BOW') {
+            range = 2; // Archers have longer range
+        }
+
+        // Check all tiles within attack range
+        for (let dy = -range; dy <= range; dy++) {
+            for (let dx = -range; dx <= range; dx++) {
+                const distance = Math.abs(dx) + Math.abs(dy);
+
+                if (distance === 0 || distance > range) continue;
+
+                const toX = fromX + dx;
+                const toY = fromY + dy;
+                const toIndex = toY * 4 + toX;
+
+                // Check bounds
+                if (toX < 0 || toX >= 4 || toY < 0 || toY >= 4) continue;
+
+                // Check if tile has enemy unit
+                const target = this.gameState.board[toIndex];
+                if (target && target.owner !== this.playerIndex) {
+                    validTargets.push(toIndex);
+                }
+            }
+        }
+
+        return validTargets;
+    }
+
+    tryAttackUnit(fromIndex, toIndex) {
+        // Validate target
+        if (!this.validTargets || !this.validTargets.includes(toIndex)) {
+            console.log('❌ Invalid attack target');
+            return;
+        }
+
+        const attacker = this.gameState.board[fromIndex];
+        const target = this.gameState.board[toIndex];
+
+        console.log(`⚔️ ${attacker.type} attacking ${target.type}`);
+
+        // Send attack to server
+        this.socket.emit('attackUnit', {
+            attackerIndex: fromIndex,
+            targetIndex: toIndex
+        });
+
+        // Clear selection
+        this.selectedUnit = null;
+        this.selectedUnitIndex = null;
+        this.validTargets = null;
+    }
+
     findMatch() {
         console.log('🎮 Finding match...');
         console.log('Socket connected:', this.socket.connected);
@@ -244,9 +459,31 @@ class BattleChess2000 {
         this.showMainMenu();
     }
 
+    endPhase() {
+        console.log('🔄 Ending current phase...');
+
+        if (!this.inGame) {
+            console.log('❌ Not in a game');
+            return;
+        }
+
+        // Check if it's my turn
+        const isMyTurn = this.gameState && this.gameState.currentTurn === this.playerIndex;
+        if (!isMyTurn) {
+            console.log('❌ Not your turn');
+            return;
+        }
+
+        // Send next phase event to server
+        this.socket.emit('nextPhase');
+    }
+
     // UI Management
     showMainMenu() {
         this.hideAllMenus();
+        // Hide phase control when not in game
+        document.querySelector('.phase-control').classList.remove('game-active');
+        this.inGame = false;
         document.getElementById('mainMenu').classList.remove('hidden');
     }
 
@@ -307,6 +544,22 @@ class BattleChess2000 {
         // Update player info
         if (this.playerName && this.opponentName) {
             document.getElementById('playerInfo').textContent = `${this.playerName} vs ${this.opponentName}`;
+        }
+
+        // Update End Phase button
+        const endPhaseBtn = document.getElementById('endPhaseBtn');
+        if (isMyTurn) {
+            endPhaseBtn.disabled = false;
+            if (phase === 'CARD') {
+                endPhaseBtn.textContent = 'Start Movement';
+            } else if (phase === 'MOVEMENT') {
+                endPhaseBtn.textContent = 'Start Combat';
+            } else {
+                endPhaseBtn.textContent = 'End Turn';
+            }
+        } else {
+            endPhaseBtn.disabled = true;
+            endPhaseBtn.textContent = 'End Phase';
         }
 
         // Update hand
@@ -394,6 +647,7 @@ class BattleChess2000 {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.drawGrid();
+        this.drawHighlights(); // Draw movement/attack highlights
         this.drawUnits();
         this.drawUI();
     }
@@ -438,6 +692,49 @@ class BattleChess2000 {
         }
     }
 
+    drawHighlights() {
+        // Highlight selected unit
+        if (this.selectedUnitIndex !== null) {
+            const x = (this.selectedUnitIndex % 4) * this.tileSize;
+            const y = Math.floor(this.selectedUnitIndex / 4) * this.tileSize;
+
+            this.ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+            this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
+
+            this.ctx.strokeStyle = '#FFFF00';
+            this.ctx.lineWidth = 4;
+            this.ctx.strokeRect(x, y, this.tileSize, this.tileSize);
+        }
+
+        // Highlight valid moves (green)
+        if (this.validMoves) {
+            this.ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+            this.validMoves.forEach(index => {
+                const x = (index % 4) * this.tileSize;
+                const y = Math.floor(index / 4) * this.tileSize;
+                this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
+
+                this.ctx.strokeStyle = '#00FF00';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(x, y, this.tileSize, this.tileSize);
+            });
+        }
+
+        // Highlight valid attack targets (red)
+        if (this.validTargets) {
+            this.ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            this.validTargets.forEach(index => {
+                const x = (index % 4) * this.tileSize;
+                const y = Math.floor(index / 4) * this.tileSize;
+                this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
+
+                this.ctx.strokeStyle = '#FF0000';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(x, y, this.tileSize, this.tileSize);
+            });
+        }
+    }
+
     drawUnits() {
         // TODO: Draw units on board (will implement when unit spawning is ready)
         this.gameState.board.forEach((unit, index) => {
@@ -462,13 +759,18 @@ class BattleChess2000 {
         this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         this.ctx.fill();
 
-        // Unit border
-        this.ctx.strokeStyle = unit.owner === this.playerIndex ? '#4CAF50' : '#F44336';
-        this.ctx.lineWidth = 3;
+        // Unit border (changes based on hasActed)
+        if (unit.hasActed) {
+            this.ctx.strokeStyle = unit.owner === this.playerIndex ? '#2E7D32' : '#C62828'; // Darker when acted
+            this.ctx.lineWidth = 2;
+        } else {
+            this.ctx.strokeStyle = unit.owner === this.playerIndex ? '#4CAF50' : '#F44336';
+            this.ctx.lineWidth = 3;
+        }
         this.ctx.stroke();
 
         // Unit type text
-        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
         this.ctx.font = `bold ${this.tileSize / 8}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.fillText(unit.type[0], centerX, centerY + 5);
@@ -485,14 +787,28 @@ class BattleChess2000 {
         this.ctx.fillStyle = '#333333';
         this.ctx.fillRect(barX, barY, barWidth, barHeight);
 
-        // HP fill
-        this.ctx.fillStyle = hpPercent > 0.5 ? '#4CAF50' : hpPercent > 0.2 ? '#FF9800' : '#F44336';
+        // HP foreground
+        const hpColor = hpPercent > 0.6 ? '#4CAF50' : hpPercent > 0.3 ? '#FF9800' : '#F44336';
+        this.ctx.fillStyle = hpColor;
         this.ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight);
 
         // HP text
         this.ctx.fillStyle = '#ffffff';
         this.ctx.font = `${this.tileSize / 12}px Arial`;
+        this.ctx.textAlign = 'center';
         this.ctx.fillText(`${unit.currentHp}/${unit.maxHp}`, centerX, barY - 2);
+
+        // Action indicator
+        if (unit.hasActed) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+            this.ctx.fillStyle = '#FFFF00';
+            this.ctx.font = `${this.tileSize / 6}px Arial`;
+            this.ctx.fillText('✓', centerX, centerY + 3);
+        }
     }
 
     drawUI() {

@@ -172,10 +172,52 @@ class GameRoom {
     };
   }
 
+  nextPhase(playerId) {
+    // Find player index
+    const playerIndex = this.players[0].id === playerId ? 0 : 1;
+
+    // Validate it's player's turn
+    if (this.currentTurn !== playerIndex) {
+      return { success: false, error: 'Not your turn' };
+    }
+
+    const currentPhase = this.gameState.currentPhase;
+
+    if (currentPhase === 'CARD') {
+      // Card Phase → Movement Phase
+      this.gameState.currentPhase = 'MOVEMENT';
+      // Reset all units' hasActed for movement
+      this.gameState.board.forEach(unit => {
+        if (unit && unit.owner === this.currentTurn) {
+          unit.hasActed = false;
+        }
+      });
+      console.log(`🔄 Phase transition: CARD → MOVEMENT (Player ${this.currentTurn + 1})`);
+    } else if (currentPhase === 'MOVEMENT') {
+      // Movement Phase → Combat Phase
+      this.gameState.currentPhase = 'COMBAT';
+      // Reset all units' hasActed for combat
+      this.gameState.board.forEach(unit => {
+        if (unit && unit.owner === this.currentTurn) {
+          unit.hasActed = false;
+        }
+      });
+      console.log(`🔄 Phase transition: MOVEMENT → COMBAT (Player ${this.currentTurn + 1})`);
+    } else if (currentPhase === 'COMBAT') {
+      // Combat Phase → End Turn (switch to other player)
+      this.switchTurn();
+    }
+
+    return { success: true };
+  }
+
   switchTurn() {
     // Switch to next player
     this.currentTurn = 1 - this.currentTurn;
     this.gameState.currentTurn = this.currentTurn;
+
+    // Reset to Card Phase for new player
+    this.gameState.currentPhase = 'CARD';
 
     // Increment turn number when it comes back to player 0
     if (this.currentTurn === 0) {
@@ -202,7 +244,7 @@ class GameRoom {
       }
     }
 
-    console.log(`🔄 Turn ${this.turnNumber}: ${this.currentTurn === 0 ? 'Player 1' : 'Player 2'} (Mana: ${activePlayer.mana}/${activePlayer.maxMana})`);
+    console.log(`🔄 Turn ${this.turnNumber}: ${this.currentTurn === 0 ? 'Player 1' : 'Player 2'} - CARD PHASE (Mana: ${activePlayer.mana}/${activePlayer.maxMana})`);
   }
 
   drawCard() {
@@ -216,6 +258,160 @@ class GameRoom {
       type: randomType,
       cost: cardCosts[randomType]
     };
+  }
+
+  moveUnit(playerId, fromIndex, toIndex) {
+    // Find player index
+    const playerIndex = this.players[0].id === playerId ? 0 : 1;
+
+    // Validate it's player's turn and Movement phase
+    if (this.currentTurn !== playerIndex) {
+      return { success: false, error: 'Not your turn' };
+    }
+
+    if (this.gameState.currentPhase !== 'MOVEMENT') {
+      return { success: false, error: 'Not movement phase' };
+    }
+
+    // Validate source unit
+    const unit = this.gameState.board[fromIndex];
+    if (!unit || unit.owner !== playerIndex) {
+      return { success: false, error: 'Invalid unit' };
+    }
+
+    if (unit.hasActed) {
+      return { success: false, error: 'Unit has already acted' };
+    }
+
+    // Validate destination
+    if (toIndex < 0 || toIndex >= 16) {
+      return { success: false, error: 'Invalid destination' };
+    }
+
+    if (this.gameState.board[toIndex] !== null) {
+      return { success: false, error: 'Destination occupied' };
+    }
+
+    // Validate movement range
+    const fromX = fromIndex % 4;
+    const fromY = Math.floor(fromIndex / 4);
+    const toX = toIndex % 4;
+    const toY = Math.floor(toIndex / 4);
+    const distance = Math.abs(toX - fromX) + Math.abs(toY - fromY);
+
+    if (distance > unit.movement) {
+      return { success: false, error: 'Move too far' };
+    }
+
+    // Execute movement
+    this.gameState.board[fromIndex] = null;
+    unit.position = toIndex;
+    unit.hasActed = true;
+    this.gameState.board[toIndex] = unit;
+
+    console.log(`🚶 ${unit.type} moved from ${fromIndex} to ${toIndex}`);
+
+    return { success: true };
+  }
+
+  attackUnit(playerId, attackerIndex, targetIndex) {
+    // Find player index
+    const playerIndex = this.players[0].id === playerId ? 0 : 1;
+
+    // Validate it's player's turn and Combat phase
+    if (this.currentTurn !== playerIndex) {
+      return { success: false, error: 'Not your turn' };
+    }
+
+    if (this.gameState.currentPhase !== 'COMBAT') {
+      return { success: false, error: 'Not combat phase' };
+    }
+
+    // Validate attacker
+    const attacker = this.gameState.board[attackerIndex];
+    if (!attacker || attacker.owner !== playerIndex) {
+      return { success: false, error: 'Invalid attacker' };
+    }
+
+    if (attacker.hasActed) {
+      return { success: false, error: 'Unit has already acted' };
+    }
+
+    // Validate target
+    const target = this.gameState.board[targetIndex];
+    if (!target || target.owner === playerIndex) {
+      return { success: false, error: 'Invalid target' };
+    }
+
+    // Validate attack range
+    const attackerX = attackerIndex % 4;
+    const attackerY = Math.floor(attackerIndex / 4);
+    const targetX = targetIndex % 4;
+    const targetY = Math.floor(targetIndex / 4);
+    const distance = Math.abs(targetX - attackerX) + Math.abs(targetY - attackerY);
+
+    let maxRange = 1; // Default melee range
+    if (attacker.weapon === 'BOW') {
+      maxRange = 2; // Archers have longer range
+    }
+
+    if (distance > maxRange) {
+      return { success: false, error: 'Target out of range' };
+    }
+
+    // Calculate damage with Weapon Triangle
+    let damage = attacker.attack;
+
+    // Weapon Triangle: SWORD > BOW > LANCE > SWORD
+    const weaponAdvantage = this.getWeaponAdvantage(attacker.weapon, target.weapon);
+    damage = Math.floor(damage * weaponAdvantage);
+
+    // Apply damage
+    target.currentHp -= damage;
+    attacker.hasActed = true;
+
+    console.log(`⚔️ ${attacker.type} (${attacker.weapon}) attacks ${target.type} (${target.weapon}) for ${damage} damage (${target.currentHp}/${target.maxHp} HP left)`);
+
+    // Remove dead units
+    if (target.currentHp <= 0) {
+      this.gameState.board[targetIndex] = null;
+      console.log(`💀 ${target.type} eliminated!`);
+    }
+
+    // Check win condition
+    const gameOverResult = this.checkWinCondition();
+
+    return {
+      success: true,
+      gameOver: gameOverResult.gameOver,
+      winner: gameOverResult.winner
+    };
+  }
+
+  getWeaponAdvantage(attackerWeapon, defenderWeapon) {
+    // Weapon Triangle: SWORD > BOW > LANCE > SWORD
+    const advantages = {
+      'SWORD': { 'BOW': 1.2, 'LANCE': 0.8, 'SWORD': 1.0 },
+      'BOW': { 'LANCE': 1.2, 'SWORD': 0.8, 'BOW': 1.0 },
+      'LANCE': { 'SWORD': 1.2, 'BOW': 0.8, 'LANCE': 1.0 }
+    };
+
+    return advantages[attackerWeapon][defenderWeapon] || 1.0;
+  }
+
+  checkWinCondition() {
+    const player0Units = this.gameState.board.filter(unit => unit && unit.owner === 0);
+    const player1Units = this.gameState.board.filter(unit => unit && unit.owner === 1);
+
+    if (player0Units.length === 0) {
+      return { gameOver: true, winner: 1 };
+    }
+
+    if (player1Units.length === 0) {
+      return { gameOver: true, winner: 0 };
+    }
+
+    return { gameOver: false, winner: null };
   }
 }
 
@@ -301,6 +497,75 @@ io.on('connection', (socket) => {
       // Send error to player
       socket.emit('gameError', { message: result.error });
       console.log(`❌ Card play failed: ${result.error}`);
+    }
+  });
+
+  // Handle phase transitions
+  socket.on('nextPhase', () => {
+    console.log(`🔄 ${socket.playerName} requesting phase transition`);
+
+    // Find the game this player is in
+    const game = findPlayerGame(socket.id);
+    if (!game) {
+      console.log('❌ Player not in a game');
+      return;
+    }
+
+    const result = game.nextPhase(socket.id);
+    if (result.success) {
+      // Broadcast game state update to both players
+      io.to(game.id).emit('gameUpdate', game.gameState);
+      console.log(`✅ Phase transition successful`);
+    } else {
+      // Send error to player
+      socket.emit('gameError', { message: result.error });
+      console.log(`❌ Phase transition failed: ${result.error}`);
+    }
+  });
+
+  // Handle unit movement
+  socket.on('moveUnit', (data) => {
+    console.log(`🚶 ${socket.playerName} moving unit:`, data);
+
+    const game = findPlayerGame(socket.id);
+    if (!game) {
+      console.log('❌ Player not in a game');
+      return;
+    }
+
+    const result = game.moveUnit(socket.id, data.fromIndex, data.toIndex);
+    if (result.success) {
+      io.to(game.id).emit('gameUpdate', game.gameState);
+      console.log(`✅ Unit moved successfully`);
+    } else {
+      socket.emit('gameError', { message: result.error });
+      console.log(`❌ Unit movement failed: ${result.error}`);
+    }
+  });
+
+  // Handle unit attacks
+  socket.on('attackUnit', (data) => {
+    console.log(`⚔️ ${socket.playerName} attacking:`, data);
+
+    const game = findPlayerGame(socket.id);
+    if (!game) {
+      console.log('❌ Player not in a game');
+      return;
+    }
+
+    const result = game.attackUnit(socket.id, data.attackerIndex, data.targetIndex);
+    if (result.success) {
+      io.to(game.id).emit('gameUpdate', game.gameState);
+      console.log(`✅ Attack executed successfully`);
+
+      // Check for win condition
+      if (result.gameOver) {
+        io.to(game.id).emit('gameOver', { winner: result.winner });
+        console.log(`🏆 Game Over! Winner: Player ${result.winner + 1}`);
+      }
+    } else {
+      socket.emit('gameError', { message: result.error });
+      console.log(`❌ Attack failed: ${result.error}`);
     }
   });
 
