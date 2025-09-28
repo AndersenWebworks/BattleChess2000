@@ -26,7 +26,7 @@ class GameRoom {
       board: new Array(16).fill(null), // 4x4 grid = 16 tiles
       currentTurn: 0, // Add currentTurn to gameState for client sync
       turnNumber: 1,
-      currentPhase: 'CARD', // CARD, MOVEMENT, COMBAT
+      // No phases in parallel gameplay
       players: [
         {
           id: player1.id,
@@ -133,8 +133,8 @@ class GameRoom {
     player.hand.splice(cardIndex, 1); // Remove card from hand
     player.mana -= card.cost; // Spend mana
 
-    // Switch turns and update mana (Hearthstone style)
-    this.switchTurn();
+    // NO turn switch - parallel gameplay allows multiple actions per turn
+    // this.switchTurn(); // REMOVED - cards don't end turn
 
     console.log(`🎮 ${card.type} spawned at tile ${tileIndex} by player ${playerIndex}`);
 
@@ -168,12 +168,14 @@ class GameRoom {
       attack: unitData.attack,
       movement: unitData.movement,
       weapon: unitData.weapon,
-      hasActed: false
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      justSummoned: true // Summoning sickness - can't move until next turn
     };
   }
 
   nextPhase(playerId) {
-    // Find player index
+    // Simplified for parallel gameplay - just end turn
     const playerIndex = this.players[0].id === playerId ? 0 : 1;
 
     // Validate it's player's turn
@@ -181,32 +183,9 @@ class GameRoom {
       return { success: false, error: 'Not your turn' };
     }
 
-    const currentPhase = this.gameState.currentPhase;
-
-    if (currentPhase === 'CARD') {
-      // Card Phase → Movement Phase
-      this.gameState.currentPhase = 'MOVEMENT';
-      // Reset all units' hasActed for movement
-      this.gameState.board.forEach(unit => {
-        if (unit && unit.owner === this.currentTurn) {
-          unit.hasActed = false;
-        }
-      });
-      console.log(`🔄 Phase transition: CARD → MOVEMENT (Player ${this.currentTurn + 1})`);
-    } else if (currentPhase === 'MOVEMENT') {
-      // Movement Phase → Combat Phase
-      this.gameState.currentPhase = 'COMBAT';
-      // Reset all units' hasActed for combat
-      this.gameState.board.forEach(unit => {
-        if (unit && unit.owner === this.currentTurn) {
-          unit.hasActed = false;
-        }
-      });
-      console.log(`🔄 Phase transition: MOVEMENT → COMBAT (Player ${this.currentTurn + 1})`);
-    } else if (currentPhase === 'COMBAT') {
-      // Combat Phase → End Turn (switch to other player)
-      this.switchTurn();
-    }
+    // No phases anymore - just switch turns
+    console.log(`🔄 Player ${this.currentTurn + 1} ending turn (parallel gameplay)`);
+    this.switchTurn();
 
     return { success: true };
   }
@@ -216,35 +195,50 @@ class GameRoom {
     this.currentTurn = 1 - this.currentTurn;
     this.gameState.currentTurn = this.currentTurn;
 
-    // Reset to Card Phase for new player
-    this.gameState.currentPhase = 'CARD';
+    // Reset unit flags for new turn (parallel gameplay)
+    this.gameState.board.forEach(unit => {
+      if (unit && unit.owner === this.currentTurn) {
+        unit.hasMovedThisTurn = false;
+        unit.hasAttackedThisTurn = false;
+        unit.justSummoned = false; // Remove summoning sickness for new turn
+      }
+    });
 
-    // Increment turn number when it comes back to player 0
+    // No more phases in parallel gameplay - remove this line
+    // this.gameState.currentPhase = 'CARD';
+
+    // Increment turn number and handle ROUND progression when it comes back to player 0
     if (this.currentTurn === 0) {
       this.turnNumber++;
       this.gameState.turnNumber = this.turnNumber;
+
+      // NEW ROUND - Increase mana for BOTH players (not per turn, but per round)
+      console.log(`🌟 NEW ROUND ${this.turnNumber} - Increasing mana for all players`);
+      this.gameState.players.forEach((player, index) => {
+        // Increase max mana (up to 10)
+        if (player.maxMana < 10) {
+          player.maxMana++;
+        }
+
+        // Refill mana to max
+        player.mana = player.maxMana;
+
+        // Draw a card (if deck exists - simplified for MVP)
+        if (player.hand.length < 10) {
+          const newCard = this.drawCard();
+          if (newCard) {
+            player.hand.push(newCard);
+          }
+        }
+
+        console.log(`👤 Player ${index + 1} Mana: ${player.mana}/${player.maxMana}`);
+      });
+    } else {
+      // Just refill current player's mana (no increase in max mana)
+      const activePlayer = this.gameState.players[this.currentTurn];
+      activePlayer.mana = activePlayer.maxMana;
+      console.log(`🔄 Player ${this.currentTurn + 1} turn - Mana refilled: ${activePlayer.mana}/${activePlayer.maxMana}`);
     }
-
-    // Update mana for new active player (Hearthstone style)
-    const activePlayer = this.gameState.players[this.currentTurn];
-
-    // Increase max mana (up to 10)
-    if (activePlayer.maxMana < 10) {
-      activePlayer.maxMana++;
-    }
-
-    // Refill mana to max
-    activePlayer.mana = activePlayer.maxMana;
-
-    // Draw a card (if deck exists - simplified for MVP)
-    if (activePlayer.hand.length < 10) {
-      const newCard = this.drawCard();
-      if (newCard) {
-        activePlayer.hand.push(newCard);
-      }
-    }
-
-    console.log(`🔄 Turn ${this.turnNumber}: ${this.currentTurn === 0 ? 'Player 1' : 'Player 2'} - CARD PHASE (Mana: ${activePlayer.mana}/${activePlayer.maxMana})`);
   }
 
   drawCard() {
@@ -264,13 +258,9 @@ class GameRoom {
     // Find player index
     const playerIndex = this.players[0].id === playerId ? 0 : 1;
 
-    // Validate it's player's turn and Movement phase
+    // Validate it's player's turn (no phase check - parallel gameplay)
     if (this.currentTurn !== playerIndex) {
       return { success: false, error: 'Not your turn' };
-    }
-
-    if (this.gameState.currentPhase !== 'MOVEMENT') {
-      return { success: false, error: 'Not movement phase' };
     }
 
     // Validate source unit
@@ -279,8 +269,14 @@ class GameRoom {
       return { success: false, error: 'Invalid unit' };
     }
 
-    if (unit.hasActed) {
-      return { success: false, error: 'Unit has already acted' };
+    // Check movement status (parallel gameplay)
+    if (unit.hasMovedThisTurn) {
+      return { success: false, error: 'Unit has already moved this turn' };
+    }
+
+    // Check summoning sickness
+    if (unit.justSummoned) {
+      return { success: false, error: 'Unit was just summoned and cannot move this turn' };
     }
 
     // Validate destination
@@ -306,7 +302,7 @@ class GameRoom {
     // Execute movement
     this.gameState.board[fromIndex] = null;
     unit.position = toIndex;
-    unit.hasActed = true;
+    unit.hasMovedThisTurn = true; // Mark as moved this turn
     this.gameState.board[toIndex] = unit;
 
     console.log(`🚶 ${unit.type} moved from ${fromIndex} to ${toIndex}`);
@@ -318,13 +314,9 @@ class GameRoom {
     // Find player index
     const playerIndex = this.players[0].id === playerId ? 0 : 1;
 
-    // Validate it's player's turn and Combat phase
+    // Validate it's player's turn (no phase check - parallel gameplay)
     if (this.currentTurn !== playerIndex) {
       return { success: false, error: 'Not your turn' };
-    }
-
-    if (this.gameState.currentPhase !== 'COMBAT') {
-      return { success: false, error: 'Not combat phase' };
     }
 
     // Validate attacker
@@ -333,8 +325,9 @@ class GameRoom {
       return { success: false, error: 'Invalid attacker' };
     }
 
-    if (attacker.hasActed) {
-      return { success: false, error: 'Unit has already acted' };
+    // Check attack status (parallel gameplay)
+    if (attacker.hasAttackedThisTurn) {
+      return { success: false, error: 'Unit has already attacked this turn' };
     }
 
     // Validate target
@@ -368,7 +361,7 @@ class GameRoom {
 
     // Apply damage
     target.currentHp -= damage;
-    attacker.hasActed = true;
+    attacker.hasAttackedThisTurn = true; // Mark as attacked this turn
 
     console.log(`⚔️ ${attacker.type} (${attacker.weapon}) attacks ${target.type} (${target.weapon}) for ${damage} damage (${target.currentHp}/${target.maxHp} HP left)`);
 

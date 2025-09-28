@@ -16,7 +16,11 @@
       "Bash(PORT=3004 npm start)",
       "Bash(PORT=3005 npm start)",
       "Bash(cmd.exe:*)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Read(//c/Andersen/Webworks/GitHub//**)",
+      "Bash(start http://localhost:3000)",
+      "Bash(PORT=3001 npm start)",
+      "Bash(PORT=3002 npm start)"
     ],
     "deny": [],
     "ask": []
