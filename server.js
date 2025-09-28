@@ -23,7 +23,7 @@ class GameRoom {
     this.currentTurn = 0; // Player 0 starts
     this.turnNumber = 1; // Track turn number for mana progression
     this.gameState = {
-      board: new Array(16).fill(null), // 4x4 grid = 16 tiles
+      board: new Array(25).fill(null), // 5x5 grid = 25 tiles
       currentTurn: 0, // Add currentTurn to gameState for client sync
       turnNumber: 1,
       // No phases in parallel gameplay
@@ -68,12 +68,13 @@ class GameRoom {
   }
 
   createStartingHand() {
-    // MVP: Fixed deck composition
-    // 6x Scout (1 mana), 6x Archer (3 mana), 3x Knight (5 mana)
+    // ULTRATHINK Balanced deck composition
+    // 5x Scout (1 mana), 5x Archer (3 mana), 3x Knight (5 mana), 2x Mage (6 mana)
     const deck = [
-      ...Array(6).fill({type: 'SCOUT', cost: 1}),
-      ...Array(6).fill({type: 'ARCHER', cost: 3}),
-      ...Array(3).fill({type: 'KNIGHT', cost: 5})
+      ...Array(5).fill({type: 'SCOUT', cost: 1}),
+      ...Array(5).fill({type: 'ARCHER', cost: 3}),
+      ...Array(3).fill({type: 'KNIGHT', cost: 5}),
+      ...Array(2).fill({type: 'MAGE', cost: 6})
     ];
 
     // Shuffle deck
@@ -110,7 +111,7 @@ class GameRoom {
     }
 
     // Validate tile index
-    if (tileIndex < 0 || tileIndex >= 16) {
+    if (tileIndex < 0 || tileIndex >= 25) {
       return { success: false, error: 'Invalid tile index' };
     }
 
@@ -143,17 +144,18 @@ class GameRoom {
 
   isValidSpawnZone(tileIndex, playerIndex) {
     if (playerIndex === 0) {
-      return tileIndex >= 12 && tileIndex <= 15; // Bottom row
+      return tileIndex >= 20 && tileIndex <= 24; // Bottom row only (20-24)
     } else {
-      return tileIndex >= 0 && tileIndex <= 3;   // Top row
+      return tileIndex >= 0 && tileIndex <= 4;   // Top row only (0-4)
     }
   }
 
   createUnit(type, owner, position) {
     const unitTypes = {
-      SCOUT: { hp: 60, attack: 30, movement: 2, weapon: 'SWORD' },
-      ARCHER: { hp: 80, attack: 60, movement: 1, weapon: 'BOW' },
-      KNIGHT: { hp: 150, attack: 90, movement: 1, weapon: 'LANCE' }
+      SCOUT: { hp: 25, attack: 30, movement: 'L_SHAPE', weapon: 'SWORD' },
+      ARCHER: { hp: 50, attack: 40, movement: 'STRAIGHT', weapon: 'BOW' },
+      KNIGHT: { hp: 90, attack: 60, movement: 'ADJACENT', weapon: 'LANCE' },
+      MAGE: { hp: 35, attack: 80, movement: 'DIAGONAL', weapon: 'STAFF' }
     };
 
     const unitData = unitTypes[type];
@@ -251,10 +253,10 @@ class GameRoom {
 
   drawCard() {
     // Simplified card draw for MVP - random card from basic set
-    const cardTypes = ['SCOUT', 'ARCHER', 'KNIGHT'];
+    const cardTypes = ['SCOUT', 'ARCHER', 'KNIGHT', 'MAGE'];
     const randomType = cardTypes[Math.floor(Math.random() * cardTypes.length)];
 
-    const cardCosts = { SCOUT: 1, ARCHER: 3, KNIGHT: 5 };
+    const cardCosts = { SCOUT: 1, ARCHER: 3, KNIGHT: 5, MAGE: 6 };
 
     return {
       type: randomType,

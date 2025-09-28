@@ -223,6 +223,9 @@ export class UIManager {
         } else if (card.type === 'KNIGHT') {
             unitSymbol = '🛡';
             weaponIcon = '🗡️';
+        } else if (card.type === 'MAGE') {
+            unitSymbol = '🔮';
+            weaponIcon = '✨';
         }
 
         cardDiv.innerHTML = `

@@ -78,10 +78,10 @@ export class GameLogic {
     showMovementOptions(unit, fromIndex) {
         console.log(`🔍 Showing movement options for ${unit.type} (Movement: ${unit.movement})`);
 
-        // Calculate valid movement tiles
+        // Calculate valid movement tiles with new chess-like patterns
         this.validMoves = this.coordinateSystem.calculateValidMoves(
             fromIndex,
-            unit.movement,
+            unit,
             this.gameState.board
         );
 

@@ -279,6 +279,8 @@ export class UnitRenderer {
             this.drawArcherEquipment(ctx, centerX, centerY, size, isOwn);
         } else if (unitType === 'KNIGHT') {
             this.drawKnightEquipment(ctx, centerX, centerY, size, isOwn);
+        } else if (unitType === 'MAGE') {
+            this.drawMageEquipment(ctx, centerX, centerY, size, isOwn);
         }
     }
 
@@ -395,6 +397,78 @@ export class UnitRenderer {
         ctx.fill();
     }
 
+    drawMageEquipment(ctx, centerX, centerY, size, isOwn) {
+        // Player-colored mystical hood
+        ctx.fillStyle = isOwn ? '#9C27B0' : '#E91E63'; // Purple vs Pink
+        ctx.beginPath();
+        ctx.arc(centerX, centerY - size * 0.6, size * 0.35, Math.PI, 2 * Math.PI);
+        ctx.fill();
+
+        // Hood shadow
+        ctx.fillStyle = isOwn ? '#7B1FA2' : '#C2185B';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY - size * 0.65, size * 0.25, Math.PI, 2 * Math.PI);
+        ctx.fill();
+
+        // Mystical staff in right hand
+        ctx.strokeStyle = '#8B4513'; // Brown wood
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(centerX + size * 0.5, centerY - size * 0.1);
+        ctx.lineTo(centerX + size * 0.5, centerY - size * 0.8);
+        ctx.stroke();
+
+        // Crystal orb at staff top
+        ctx.fillStyle = '#E1F5FE';
+        ctx.strokeStyle = '#00BCD4';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(centerX + size * 0.5, centerY - size * 0.8, size * 0.08, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        // Magical sparkles around orb
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const sparkleX = centerX + size * 0.5 + Math.cos(angle) * size * 0.15;
+            const sparkleY = centerY - size * 0.8 + Math.sin(angle) * size * 0.15;
+
+            ctx.fillStyle = '#FFD700'; // Gold sparkles
+            ctx.beginPath();
+            ctx.arc(sparkleX, sparkleY, size * 0.02, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // Mystical robe
+        ctx.fillStyle = isOwn ? '#673AB7' : '#9C27B0';
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY + size * 0.1, size * 0.3, size * 0.4, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Robe belt with magical symbols
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(centerX - size * 0.25, centerY);
+        ctx.lineTo(centerX + size * 0.25, centerY);
+        ctx.stroke();
+
+        // Magical symbol on belt (star)
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const starSize = size * 0.06;
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+            const x = centerX + Math.cos(angle) * starSize;
+            const y = centerY + Math.sin(angle) * starSize;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+    }
+
     // Tired/acted state visual effects
     drawTiredEffect(ctx, centerX, centerY, size) {
         // Tired effect removed - only keep summoning sickness zZz
@@ -455,6 +529,10 @@ export class UnitRenderer {
     }
 
     drawKnight(ctx, centerX, centerY, size, unit) {
+        this.drawEmotionalWarrior(ctx, centerX, centerY, size, unit);
+    }
+
+    drawMage(ctx, centerX, centerY, size, unit) {
         this.drawEmotionalWarrior(ctx, centerX, centerY, size, unit);
     }
 }

@@ -4,15 +4,17 @@
 export class GameData {
     static get UNIT_TYPES() {
         return {
-            SCOUT: { hp: 60, attack: 30, movement: 2, weapon: 'SWORD', cost: 1, color: '#4CAF50' },
-            ARCHER: { hp: 80, attack: 60, movement: 1, weapon: 'BOW', cost: 3, color: '#2196F3' },
-            KNIGHT: { hp: 150, attack: 90, movement: 1, weapon: 'LANCE', cost: 5, color: '#FF9800' }
+            SCOUT: { hp: 25, attack: 30, movement: 'L_SHAPE', weapon: 'SWORD', cost: 1, color: '#4CAF50' },
+            ARCHER: { hp: 50, attack: 40, movement: 'STRAIGHT', weapon: 'BOW', cost: 3, color: '#2196F3' },
+            KNIGHT: { hp: 90, attack: 60, movement: 'ADJACENT', weapon: 'LANCE', cost: 5, color: '#FF9800' },
+            MAGE: { hp: 35, attack: 80, movement: 'DIAGONAL', weapon: 'STAFF', cost: 6, color: '#9C27B0' }
         };
     }
 
     static get WEAPON_ADVANTAGE() {
         return {
-            SWORD: 'BOW',
+            SWORD: 'STAFF',
+            STAFF: 'BOW',
             BOW: 'LANCE',
             LANCE: 'SWORD'
         };
@@ -22,7 +24,8 @@ export class GameData {
         return {
             SCOUT: 'SWORD',
             ARCHER: 'BOW',
-            KNIGHT: 'LANCE'
+            KNIGHT: 'LANCE',
+            MAGE: 'STAFF'
         };
     }
 
@@ -41,11 +44,12 @@ export class GameData {
     // Game configuration constants
     static get CONFIG() {
         return {
-            BOARD_SIZE: 4,
+            BOARD_SIZE: 5,
             MAX_CANVAS_SIZE: 400,
             DEATH_ANIMATION_DURATION: 2000,
             HURT_ANIMATION_DURATION: 1000,
-            ATTACK_ANIMATION_DURATION: 800
+            ATTACK_ANIMATION_DURATION: 800,
+            WEAPON_ADVANTAGE_MULTIPLIER: 1.4
         };
     }
 }

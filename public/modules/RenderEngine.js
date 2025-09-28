@@ -132,11 +132,11 @@ export class RenderEngine {
     }
 
     drawSpawnZones() {
-        // Player 0 spawn zone (bottom row)
+        // Player 0 spawn zone (bottom row for 5x5 board)
         this.ctx.fillStyle = 'rgba(76, 175, 80, 0.1)';
-        this.ctx.fillRect(0, 3 * this.tileSize, this.canvas.width, this.tileSize);
+        this.ctx.fillRect(0, 4 * this.tileSize, this.canvas.width, this.tileSize);
 
-        // Player 1 spawn zone (top row)
+        // Player 1 spawn zone (top row for 5x5 board)
         this.ctx.fillStyle = 'rgba(244, 67, 54, 0.1)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.tileSize);
 
