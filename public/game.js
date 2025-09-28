@@ -11,6 +11,20 @@ class BattleChess2000 {
         this.selectedUnit = null;
         this.selectedCard = null;
 
+        // Animation system
+        this.animations = [];
+        this.damageNumbers = [];
+        this.particles = [];
+
+        // Death animation system
+        this.deathAnimations = [];
+        this.corpses = [];
+        this.weaponDrops = [];
+        this.bloodPools = [];
+
+        // Hurt animation system
+        this.hurtAnimations = [];
+
         // Unit definitions (MVP)
         this.unitTypes = {
             SCOUT: { hp: 60, attack: 30, movement: 2, weapon: 'SWORD', cost: 1, color: '#4CAF50' },
@@ -121,6 +135,12 @@ class BattleChess2000 {
 
         this.socket.on('gameUpdate', (newGameState) => {
             console.log('🔄 Game state updated:', newGameState);
+
+            // Check if this is an attack result by comparing HP
+            if (this.gameState) {
+                this.checkForAttackAnimations(this.gameState, newGameState);
+            }
+
             this.gameState = newGameState;
             this.updateGameState();
             this.render();
@@ -696,8 +716,26 @@ class BattleChess2000 {
 
         this.drawGrid();
         this.drawHighlights(); // Draw movement/attack highlights
+        this.drawBloodPools(); // Draw permanent blood pools
+        this.drawCorpses(); // Draw dead bodies
+        this.drawWeaponDrops(); // Draw dropped weapons
         this.drawUnits();
+        this.drawHurtOverlays(); // Draw hurt expressions over units
+        this.drawAnimations(); // Draw combat animations
+        this.drawDeathAnimations(); // Draw death sequences
+        this.drawParticles(); // Draw blood and effects
+        this.drawDamageNumbers(); // Draw floating damage numbers
         this.drawUI();
+
+        // Update animations
+        this.updateAnimations();
+
+        // Keep rendering if animations are active
+        if (this.animations.length > 0 || this.particles.length > 0 ||
+            this.damageNumbers.length > 0 || this.deathAnimations.length > 0 ||
+            this.hurtAnimations.length > 0) {
+            requestAnimationFrame(() => this.render());
+        }
     }
 
     drawGrid() {
@@ -790,14 +828,8 @@ class BattleChess2000 {
         const centerY = y + this.tileSize / 2;
         const size = this.tileSize / 3;
 
-        // Different shapes and colors for each unit type
-        if (unit.type === 'SCOUT') {
-            this.drawScout(centerX, centerY, size, unit);
-        } else if (unit.type === 'ARCHER') {
-            this.drawArcher(centerX, centerY, size, unit);
-        } else if (unit.type === 'KNIGHT') {
-            this.drawKnight(centerX, centerY, size, unit);
-        }
+        // Universal emotional warrior with equipment-based differences
+        this.drawEmotionalWarrior(centerX, centerY, size, unit);
 
         // HP bar
         const barWidth = this.tileSize * 0.8;
@@ -844,71 +876,475 @@ class BattleChess2000 {
         }
     }
 
-    drawScout(centerX, centerY, radius, unit) {
-        // Scout: Fast green circle with sword symbol
+    // Emotional Warrior System - Base model with facial expressions and equipment
+    drawEmotionalWarrior(centerX, centerY, size, unit) {
         const isOwn = unit.owner === this.playerIndex;
+        const scale = size / 25;
 
-        // Main circle - bright green
-        this.ctx.fillStyle = isOwn ? '#4CAF50' : '#8BC34A';
+        // Determine emotional state
+        let emotion = 'normal';
+        if (unit.hasActed) emotion = 'tired';
+        if (unit.currentHp < unit.maxHp * 0.3) emotion = 'hurt';
+
+        // Base warrior body
+        this.drawWarriorBody(centerX, centerY, size, isOwn, emotion);
+
+        // Equipment based on unit type
+        this.drawWarriorEquipment(centerX, centerY, size, unit.type, isOwn);
+    }
+
+    drawWarriorBody(centerX, centerY, size, isOwn, emotion) {
+        const scale = size / 25;
+
+        // Colors
+        const skinColor = '#FFDBAC'; // Skin tone
+        const eyeColor = '#000000';
+        const bodyColor = isOwn ? '#4A5568' : '#7A7A7A'; // Base armor color
+
+        // HEAD - Larger and more expressive
+        this.ctx.fillStyle = skinColor;
         this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        this.ctx.arc(centerX, centerY - size * 0.6, size * 0.3, 0, 2 * Math.PI);
         this.ctx.fill();
-
-        // Border
-        this.ctx.strokeStyle = unit.hasActed ? '#2E7D32' : (isOwn ? '#1B5E20' : '#F44336');
-        this.ctx.lineWidth = unit.hasActed ? 2 : 3;
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = Math.max(1, scale);
         this.ctx.stroke();
 
-        // Sword symbol
-        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
-        this.ctx.font = `bold ${radius * 0.8}px Arial`;
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('🗡', centerX, centerY + radius * 0.3);
+        // EYES - The key to emotion!
+        this.drawWarriorEyes(centerX, centerY - size * 0.6, size, emotion);
+
+        // MOUTH - Emotional expression
+        this.drawWarriorMouth(centerX, centerY - size * 0.6, size, emotion);
+
+        // BODY - Rounded torso
+        this.ctx.fillStyle = bodyColor;
+        this.ctx.beginPath();
+        this.ctx.ellipse(centerX, centerY - size * 0.1, size * 0.25, size * 0.35, 0, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.strokeStyle = isOwn ? '#2D3748' : '#4A5568';
+        this.ctx.lineWidth = Math.max(1, scale * 2);
+        this.ctx.stroke();
+
+        // ARMS - Rounded
+        this.ctx.fillStyle = skinColor;
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = Math.max(1, scale * 1.5);
+
+        // Left arm
+        this.ctx.beginPath();
+        this.ctx.arc(centerX - size * 0.4, centerY - size * 0.1, size * 0.12, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right arm
+        this.ctx.beginPath();
+        this.ctx.arc(centerX + size * 0.4, centerY - size * 0.1, size * 0.12, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // LEGS - Rounded thighs and shins
+        // Left leg
+        this.ctx.beginPath();
+        this.ctx.ellipse(centerX - size * 0.15, centerY + size * 0.35, size * 0.1, size * 0.25, 0, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right leg
+        this.ctx.beginPath();
+        this.ctx.ellipse(centerX + size * 0.15, centerY + size * 0.35, size * 0.1, size * 0.25, 0, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // FEET - Simple boots
+        this.ctx.fillStyle = '#654321';
+        this.ctx.fillRect(centerX - size * 0.2, centerY + size * 0.55, size * 0.1, size * 0.15);
+        this.ctx.fillRect(centerX + size * 0.1, centerY + size * 0.55, size * 0.1, size * 0.15);
+    }
+
+    drawWarriorEyes(centerX, centerY, size, emotion) {
+        const eyeSize = size * 0.08;
+        const eyeOffset = size * 0.1;
+
+        this.ctx.fillStyle = '#FFFFFF';
+
+        if (emotion === 'hurt' || emotion === 'pain') {
+            // X-shaped hurt eyes
+            this.ctx.strokeStyle = '#000000';
+            this.ctx.lineWidth = 2;
+
+            // Left eye X
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX - eyeOffset - eyeSize/2, centerY - eyeSize/2);
+            this.ctx.lineTo(centerX - eyeOffset + eyeSize/2, centerY + eyeSize/2);
+            this.ctx.moveTo(centerX - eyeOffset + eyeSize/2, centerY - eyeSize/2);
+            this.ctx.lineTo(centerX - eyeOffset - eyeSize/2, centerY + eyeSize/2);
+            this.ctx.stroke();
+
+            // Right eye X
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX + eyeOffset - eyeSize/2, centerY - eyeSize/2);
+            this.ctx.lineTo(centerX + eyeOffset + eyeSize/2, centerY + eyeSize/2);
+            this.ctx.moveTo(centerX + eyeOffset + eyeSize/2, centerY - eyeSize/2);
+            this.ctx.lineTo(centerX + eyeOffset - eyeSize/2, centerY + eyeSize/2);
+            this.ctx.stroke();
+
+        } else if (emotion === 'tired') {
+            // Half-closed sleepy eyes
+            this.ctx.beginPath();
+            this.ctx.ellipse(centerX - eyeOffset, centerY, eyeSize, eyeSize/2, 0, 0, Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.ellipse(centerX + eyeOffset, centerY, eyeSize, eyeSize/2, 0, 0, Math.PI);
+            this.ctx.fill();
+
+        } else if (emotion === 'shock') {
+            // Wide open shocked eyes
+            this.ctx.beginPath();
+            this.ctx.arc(centerX - eyeOffset, centerY, eyeSize * 1.2, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.arc(centerX + eyeOffset, centerY, eyeSize * 1.2, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+            // Large pupils (shocked)
+            this.ctx.fillStyle = '#000000';
+            this.ctx.beginPath();
+            this.ctx.arc(centerX - eyeOffset, centerY, eyeSize * 0.7, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.arc(centerX + eyeOffset, centerY, eyeSize * 0.7, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+        } else if (emotion === 'dying') {
+            // Spiral death eyes
+            this.ctx.strokeStyle = '#000000';
+            this.ctx.lineWidth = 2;
+
+            // Left eye spiral
+            this.ctx.beginPath();
+            for (let i = 0; i < 20; i++) {
+                const angle = (i / 20) * Math.PI * 4;
+                const radius = (i / 20) * eyeSize * 0.8;
+                const x = centerX - eyeOffset + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                if (i === 0) this.ctx.moveTo(x, y);
+                else this.ctx.lineTo(x, y);
+            }
+            this.ctx.stroke();
+
+            // Right eye spiral
+            this.ctx.beginPath();
+            for (let i = 0; i < 20; i++) {
+                const angle = (i / 20) * Math.PI * 4;
+                const radius = (i / 20) * eyeSize * 0.8;
+                const x = centerX + eyeOffset + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                if (i === 0) this.ctx.moveTo(x, y);
+                else this.ctx.lineTo(x, y);
+            }
+            this.ctx.stroke();
+
+        } else {
+            // Normal alert eyes
+            this.ctx.beginPath();
+            this.ctx.arc(centerX - eyeOffset, centerY, eyeSize, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.arc(centerX + eyeOffset, centerY, eyeSize, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+            // Pupils
+            this.ctx.fillStyle = '#000000';
+            this.ctx.beginPath();
+            this.ctx.arc(centerX - eyeOffset, centerY, eyeSize * 0.5, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.arc(centerX + eyeOffset, centerY, eyeSize * 0.5, 0, 2 * Math.PI);
+            this.ctx.fill();
+        }
+    }
+
+    drawWarriorMouth(centerX, centerY, size, emotion) {
+        const mouthY = centerY + size * 0.15;
+
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+
+        if (emotion === 'hurt' || emotion === 'pain') {
+            // Sad downward mouth
+            this.ctx.arc(centerX, mouthY - size * 0.05, size * 0.08, 0.2 * Math.PI, 0.8 * Math.PI);
+        } else if (emotion === 'tired') {
+            // Neutral small line
+            this.ctx.moveTo(centerX - size * 0.05, mouthY);
+            this.ctx.lineTo(centerX + size * 0.05, mouthY);
+        } else if (emotion === 'shock') {
+            // Open shocked mouth (O shape)
+            this.ctx.arc(centerX, mouthY, size * 0.06, 0, 2 * Math.PI);
+        } else if (emotion === 'dying') {
+            // Drooping dying mouth
+            this.ctx.arc(centerX, mouthY - size * 0.08, size * 0.1, 0.3 * Math.PI, 0.7 * Math.PI);
+        } else {
+            // Determined small smile
+            this.ctx.arc(centerX, mouthY + size * 0.02, size * 0.06, 1.2 * Math.PI, 1.8 * Math.PI);
+        }
+
+        this.ctx.stroke();
+    }
+
+    drawWarriorEquipment(centerX, centerY, size, unitType, isOwn) {
+        if (unitType === 'SCOUT') {
+            this.drawScoutEquipment(centerX, centerY, size, isOwn);
+        } else if (unitType === 'ARCHER') {
+            this.drawArcherEquipment(centerX, centerY, size, isOwn);
+        } else if (unitType === 'KNIGHT') {
+            this.drawKnightEquipment(centerX, centerY, size, isOwn);
+        }
+    }
+
+    drawScoutEquipment(centerX, centerY, size, isOwn) {
+        // Light green scout helm
+        this.ctx.fillStyle = '#4CAF50';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY - size * 0.6, size * 0.32, Math.PI, 2 * Math.PI);
+        this.ctx.fill();
+
+        // Small sword at side
+        this.ctx.strokeStyle = '#FFD700';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.45, centerY - size * 0.2);
+        this.ctx.lineTo(centerX + size * 0.45, centerY + size * 0.15);
+        this.ctx.stroke();
+
+        // Sword hilt
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.4, centerY + size * 0.15);
+        this.ctx.lineTo(centerX + size * 0.5, centerY + size * 0.15);
+        this.ctx.stroke();
+    }
+
+    drawArcherEquipment(centerX, centerY, size, isOwn) {
+        // Blue archer helm with feather
+        this.ctx.fillStyle = '#2196F3';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY - size * 0.6, size * 0.32, Math.PI, 2 * Math.PI);
+        this.ctx.fill();
+
+        // Feather on helm
+        this.ctx.strokeStyle = '#4CAF50';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.2, centerY - size * 0.8);
+        this.ctx.lineTo(centerX + size * 0.15, centerY - size * 0.9);
+        this.ctx.stroke();
+
+        // Bow on left shoulder
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX - size * 0.5, centerY - size * 0.2, size * 0.25, -Math.PI/3, Math.PI/3, false);
+        this.ctx.stroke();
+
+        // Quiver on back
+        this.ctx.fillStyle = '#654321';
+        this.ctx.fillRect(centerX + size * 0.25, centerY - size * 0.4, size * 0.12, size * 0.3);
+
+        // Arrow tips sticking out
+        for (let i = 0; i < 3; i++) {
+            const arrowX = centerX + size * 0.27 + i * size * 0.03;
+            const arrowY = centerY - size * 0.42;
+            this.ctx.fillStyle = '#C0C0C0';
+            this.ctx.beginPath();
+            this.ctx.arc(arrowX, arrowY, size * 0.02, 0, 2 * Math.PI);
+            this.ctx.fill();
+        }
+    }
+
+    drawKnightEquipment(centerX, centerY, size, isOwn) {
+        // Heavy orange helm with visor
+        this.ctx.fillStyle = '#FF9800';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY - size * 0.6, size * 0.35, Math.PI, 2 * Math.PI);
+        this.ctx.fill();
+
+        // Visor line
+        this.ctx.strokeStyle = '#BF360C';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - size * 0.25, centerY - size * 0.65);
+        this.ctx.lineTo(centerX + size * 0.25, centerY - size * 0.65);
+        this.ctx.stroke();
+
+        // Shield on left arm
+        this.ctx.fillStyle = '#C0C0C0';
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.ellipse(centerX - size * 0.6, centerY - size * 0.1, size * 0.18, size * 0.25, 0, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Shield cross
+        this.ctx.strokeStyle = '#FF0000';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - size * 0.6, centerY - size * 0.25);
+        this.ctx.lineTo(centerX - size * 0.6, centerY + size * 0.05);
+        this.ctx.moveTo(centerX - size * 0.72, centerY - size * 0.1);
+        this.ctx.lineTo(centerX - size * 0.48, centerY - size * 0.1);
+        this.ctx.stroke();
+
+        // Lance in right hand
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.5, centerY - size * 0.1);
+        this.ctx.lineTo(centerX + size * 0.8, centerY - size * 0.6);
+        this.ctx.stroke();
+
+        // Lance tip
+        this.ctx.fillStyle = '#C0C0C0';
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.8, centerY - size * 0.6);
+        this.ctx.lineTo(centerX + size * 0.75, centerY - size * 0.55);
+        this.ctx.lineTo(centerX + size * 0.85, centerY - size * 0.55);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
+    drawStickFigureBase(centerX, centerY, size, unit) {
+        const isOwn = unit.owner === this.playerIndex;
+        const scale = size / 20; // Base scale for stick figure
+
+        // Colors based on owner
+        const bodyColor = unit.hasActed ? '#666666' : (isOwn ? '#ffffff' : '#ffcccc');
+        const outlineColor = isOwn ? '#000000' : '#880000';
+
+        this.ctx.strokeStyle = outlineColor;
+        this.ctx.fillStyle = bodyColor;
+        this.ctx.lineWidth = Math.max(1, scale * 2);
+
+        // Head (circle)
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY - size * 0.6, size * 0.25, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Body (line)
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, centerY - size * 0.35);
+        this.ctx.lineTo(centerX, centerY + size * 0.2);
+        this.ctx.stroke();
+
+        // Arms (lines)
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - size * 0.4, centerY - size * 0.1);
+        this.ctx.lineTo(centerX + size * 0.4, centerY - size * 0.1);
+        this.ctx.stroke();
+
+        // Legs (lines)
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, centerY + size * 0.2);
+        this.ctx.lineTo(centerX - size * 0.3, centerY + size * 0.6);
+        this.ctx.moveTo(centerX, centerY + size * 0.2);
+        this.ctx.lineTo(centerX + size * 0.3, centerY + size * 0.6);
+        this.ctx.stroke();
+
+        return { bodyColor, outlineColor, scale };
+    }
+
+    drawScout(centerX, centerY, size, unit) {
+        // Draw base stick figure
+        const { bodyColor, outlineColor, scale } = this.drawStickFigureBase(centerX, centerY, size, unit);
+
+        // Scout equipment: Small sword at side
+        this.ctx.strokeStyle = '#FFD700'; // Gold sword
+        this.ctx.lineWidth = Math.max(1, scale * 1.5);
+
+        // Sword blade
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.5, centerY - size * 0.2);
+        this.ctx.lineTo(centerX + size * 0.5, centerY + size * 0.1);
+        this.ctx.stroke();
+
+        // Sword hilt
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.4, centerY + size * 0.1);
+        this.ctx.lineTo(centerX + size * 0.6, centerY + size * 0.1);
+        this.ctx.stroke();
+
+        // Scout identifier - green chest armor
+        this.ctx.fillStyle = '#4CAF50';
+        this.ctx.fillRect(centerX - size * 0.15, centerY - size * 0.3, size * 0.3, size * 0.25);
     }
 
     drawArcher(centerX, centerY, size, unit) {
-        // Archer: Blue triangle with bow symbol
-        const isOwn = unit.owner === this.playerIndex;
+        // Draw base stick figure
+        const { bodyColor, outlineColor, scale } = this.drawStickFigureBase(centerX, centerY, size, unit);
 
-        // Triangle shape
-        this.ctx.fillStyle = isOwn ? '#2196F3' : '#64B5F6';
+        // Archer equipment: Bow and quiver
+        this.ctx.strokeStyle = '#8B4513'; // Brown bow
+        this.ctx.lineWidth = Math.max(1, scale * 2);
+
+        // Bow arc
         this.ctx.beginPath();
-        this.ctx.moveTo(centerX, centerY - size);
-        this.ctx.lineTo(centerX - size, centerY + size);
-        this.ctx.lineTo(centerX + size, centerY + size);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        // Border
-        this.ctx.strokeStyle = unit.hasActed ? '#1565C0' : (isOwn ? '#0D47A1' : '#F44336');
-        this.ctx.lineWidth = unit.hasActed ? 2 : 3;
+        this.ctx.arc(centerX - size * 0.6, centerY - size * 0.1, size * 0.3, -Math.PI/3, Math.PI/3, false);
         this.ctx.stroke();
 
-        // Bow symbol
-        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
-        this.ctx.font = `bold ${size * 0.7}px Arial`;
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('🏹', centerX, centerY + size * 0.3);
+        // Bow string
+        this.ctx.lineWidth = Math.max(1, scale);
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - size * 0.45, centerY - size * 0.25);
+        this.ctx.lineTo(centerX - size * 0.45, centerY + size * 0.05);
+        this.ctx.stroke();
+
+        // Quiver on back
+        this.ctx.fillStyle = '#654321';
+        this.ctx.fillRect(centerX + size * 0.2, centerY - size * 0.4, size * 0.1, size * 0.3);
+
+        // Archer identifier - blue chest armor
+        this.ctx.fillStyle = '#2196F3';
+        this.ctx.fillRect(centerX - size * 0.15, centerY - size * 0.3, size * 0.3, size * 0.25);
     }
 
     drawKnight(centerX, centerY, size, unit) {
-        // Knight: Orange square with shield symbol
-        const isOwn = unit.owner === this.playerIndex;
+        // Draw base stick figure (but bulkier)
+        const { bodyColor, outlineColor, scale } = this.drawStickFigureBase(centerX, centerY, size, unit);
 
-        // Square shape
-        this.ctx.fillStyle = isOwn ? '#FF9800' : '#FFB74D';
-        this.ctx.fillRect(centerX - size, centerY - size, size * 2, size * 2);
+        // Knight equipment: Shield and lance
+        // Shield on left arm
+        this.ctx.fillStyle = '#C0C0C0'; // Silver shield
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = Math.max(1, scale);
 
-        // Border
-        this.ctx.strokeStyle = unit.hasActed ? '#E65100' : (isOwn ? '#BF360C' : '#F44336');
-        this.ctx.lineWidth = unit.hasActed ? 2 : 3;
-        this.ctx.strokeRect(centerX - size, centerY - size, size * 2, size * 2);
+        this.ctx.beginPath();
+        this.ctx.arc(centerX - size * 0.5, centerY - size * 0.1, size * 0.2, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
 
-        // Shield symbol
-        this.ctx.fillStyle = unit.hasActed ? '#CCCCCC' : '#ffffff';
-        this.ctx.font = `bold ${size * 0.7}px Arial`;
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('🛡', centerX, centerY + size * 0.3);
+        // Lance in right hand
+        this.ctx.strokeStyle = '#8B4513'; // Brown lance shaft
+        this.ctx.lineWidth = Math.max(1, scale * 2);
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.4, centerY - size * 0.1);
+        this.ctx.lineTo(centerX + size * 0.7, centerY - size * 0.5);
+        this.ctx.stroke();
+
+        // Lance tip
+        this.ctx.fillStyle = '#C0C0C0';
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + size * 0.7, centerY - size * 0.5);
+        this.ctx.lineTo(centerX + size * 0.65, centerY - size * 0.45);
+        this.ctx.lineTo(centerX + size * 0.75, centerY - size * 0.45);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Knight identifier - orange chest armor (heavier)
+        this.ctx.fillStyle = '#FF9800';
+        this.ctx.fillRect(centerX - size * 0.2, centerY - size * 0.35, size * 0.4, size * 0.35);
     }
 
     drawUI() {
@@ -929,6 +1365,957 @@ class BattleChess2000 {
             timestamp: new Date().toISOString()
         });
         console.log('🧪 Test message sent');
+    }
+
+    // Check for attack animations by comparing game states
+    checkForAttackAnimations(oldState, newState) {
+        // Compare each unit's HP to detect attacks and deaths
+        for (let i = 0; i < 16; i++) {
+            const oldUnit = oldState.board[i];
+            const newUnit = newState.board[i];
+
+            // Check for unit death (unit existed, now it's gone)
+            if (oldUnit && !newUnit) {
+                // Find who killed this unit by looking for units that just acted
+                for (let j = 0; j < 16; j++) {
+                    const attacker = newState.board[j];
+                    const oldAttacker = oldState.board[j];
+
+                    if (attacker && oldAttacker &&
+                        !oldAttacker.hasActed && attacker.hasActed) {
+
+                        console.log(`💀 DEATH ANIMATION: ${oldUnit.type} killed by ${attacker.weapon} at position ${i}`);
+
+                        // Trigger epic death animation
+                        this.triggerDeathAnimation(i, oldUnit.type, attacker.weapon);
+                        break;
+                    }
+                }
+            }
+            // Check for damage (but unit survives)
+            else if (oldUnit && newUnit && oldUnit.currentHp > newUnit.currentHp) {
+                const damage = oldUnit.currentHp - newUnit.currentHp;
+
+                // Find who attacked by looking for units that just acted
+                for (let j = 0; j < 16; j++) {
+                    const attacker = newState.board[j];
+                    const oldAttacker = oldState.board[j];
+
+                    if (attacker && oldAttacker &&
+                        !oldAttacker.hasActed && attacker.hasActed) {
+
+                        // Calculate weapon advantage for visual feedback
+                        const weaponAdvantage = this.calculateWeaponAdvantage(
+                            attacker.weapon, oldUnit.weapon
+                        );
+
+                        // Trigger attack animation (non-lethal)
+                        this.triggerAttackAnimation(j, i, damage, weaponAdvantage);
+
+                        // Also trigger hurt animation for emotional feedback
+                        this.triggerHurtAnimation(i, damage, attacker.weapon);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    calculateWeaponAdvantage(attackerWeapon, defenderWeapon) {
+        // Weapon Triangle: SWORD > BOW > LANCE > SWORD
+        const advantages = {
+            'SWORD': { 'BOW': 1.2, 'LANCE': 1.0, 'SWORD': 1.0 },
+            'BOW': { 'LANCE': 1.2, 'SWORD': 1.0, 'BOW': 1.0 },
+            'LANCE': { 'SWORD': 1.2, 'BOW': 1.0, 'LANCE': 1.0 }
+        };
+        return advantages[attackerWeapon][defenderWeapon] || 1.0;
+    }
+
+    // Animation System
+    updateAnimations() {
+        const currentTime = Date.now();
+
+        // Update active animations
+        this.animations = this.animations.filter(anim => {
+            anim.progress = (currentTime - anim.startTime) / anim.duration;
+            return anim.progress < 1.0;
+        });
+
+        // Update death animations
+        this.deathAnimations = this.deathAnimations.filter(deathAnim => {
+            deathAnim.age += 16;
+            deathAnim.progress = deathAnim.age / deathAnim.totalDuration;
+
+            // Check if we need to advance to next phase
+            const phaseIndex = Math.floor(deathAnim.progress * deathAnim.phases.length);
+            if (phaseIndex !== deathAnim.currentPhase && phaseIndex < deathAnim.phases.length) {
+                deathAnim.currentPhase = phaseIndex;
+                deathAnim.phaseStartTime = currentTime;
+            }
+
+            return deathAnim.progress < 1.0;
+        });
+
+        // Update particles
+        this.particles = this.particles.filter(particle => {
+            particle.age += 16; // Assume 60fps
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.vy += 0.3; // Gravity
+            particle.alpha = Math.max(0, 1 - particle.age / particle.lifetime);
+            return particle.age < particle.lifetime;
+        });
+
+        // Update damage numbers
+        this.damageNumbers = this.damageNumbers.filter(dmg => {
+            dmg.age += 16;
+            dmg.y -= 1; // Float upward
+            dmg.alpha = Math.max(0, 1 - dmg.age / dmg.lifetime);
+            return dmg.age < dmg.lifetime;
+        });
+
+        // Update weapon drops (they wobble and settle)
+        this.weaponDrops.forEach(weapon => {
+            if (weapon.age < 1000) { // First second: wobble
+                weapon.age += 16;
+                weapon.rotation += weapon.wobbleSpeed;
+                weapon.wobbleSpeed *= 0.95; // Damping
+            }
+        });
+
+        // Update hurt animations (temporary pain expressions)
+        this.hurtAnimations = this.hurtAnimations.filter(hurt => {
+            hurt.age += 16;
+            hurt.intensity = Math.max(0, 1 - hurt.age / hurt.duration);
+            return hurt.age < hurt.duration;
+        });
+    }
+
+    drawAnimations() {
+        this.animations.forEach(anim => {
+            if (anim.type === 'attack') {
+                this.drawAttackAnimation(anim);
+            }
+        });
+    }
+
+    drawAttackAnimation(anim) {
+        const { fromPos, toPos, weapon, progress } = anim;
+
+        if (weapon === 'SWORD') {
+            // Sword swing: Yellow arc from attacker
+            this.ctx.strokeStyle = `rgba(255, 215, 0, ${1 - progress})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            const angle = Math.PI * progress;
+            this.ctx.arc(fromPos.x, fromPos.y, 30, -angle, angle);
+            this.ctx.stroke();
+
+        } else if (weapon === 'BOW') {
+            // Arrow flight: Blue line traveling to target
+            const currentX = fromPos.x + (toPos.x - fromPos.x) * progress;
+            const currentY = fromPos.y + (toPos.y - fromPos.y) * progress;
+
+            this.ctx.strokeStyle = '#2196F3';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(fromPos.x, fromPos.y);
+            this.ctx.lineTo(currentX, currentY);
+            this.ctx.stroke();
+
+            // Arrow tip
+            this.ctx.fillStyle = '#1976D2';
+            this.ctx.beginPath();
+            this.ctx.arc(currentX, currentY, 3, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+        } else if (weapon === 'LANCE') {
+            // Lance thrust: Orange line extending forward
+            const extendDistance = 40 * progress;
+            const dx = toPos.x - fromPos.x;
+            const dy = toPos.y - fromPos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const normalizedX = dx / distance;
+            const normalizedY = dy / distance;
+
+            this.ctx.strokeStyle = `rgba(255, 152, 0, ${1 - progress * 0.5})`;
+            this.ctx.lineWidth = 4;
+            this.ctx.beginPath();
+            this.ctx.moveTo(fromPos.x, fromPos.y);
+            this.ctx.lineTo(
+                fromPos.x + normalizedX * extendDistance,
+                fromPos.y + normalizedY * extendDistance
+            );
+            this.ctx.stroke();
+        }
+    }
+
+    drawParticles() {
+        this.particles.forEach(particle => {
+            this.ctx.fillStyle = `rgba(${particle.color}, ${particle.alpha})`;
+            this.ctx.beginPath();
+            this.ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI);
+            this.ctx.fill();
+        });
+    }
+
+    drawDamageNumbers() {
+        this.damageNumbers.forEach(dmg => {
+            this.ctx.fillStyle = `rgba(${dmg.color}, ${dmg.alpha})`;
+            this.ctx.font = `bold ${dmg.size}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(dmg.text, dmg.x, dmg.y);
+        });
+    }
+
+    // Trigger hurt animation for non-lethal damage
+    triggerHurtAnimation(targetIndex, damage, killerWeapon) {
+        const targetPos = this.getVisualPosition(targetIndex);
+        const centerX = targetPos.x + this.tileSize / 2;
+        const centerY = targetPos.y + this.tileSize / 2;
+
+        // Create hurt overlay
+        this.hurtAnimations.push({
+            x: centerX,
+            y: centerY,
+            unitIndex: targetIndex,
+            age: 0,
+            duration: 1000, // 1 second of hurt expression
+            intensity: 1.0,
+            killerWeapon: killerWeapon
+        });
+
+        // Blood splatter on hit (smaller than death)
+        const bloodCount = Math.min(8, Math.max(3, damage / 10));
+        for (let i = 0; i < bloodCount; i++) {
+            this.particles.push({
+                x: centerX + (Math.random() - 0.5) * 20,
+                y: centerY + (Math.random() - 0.5) * 20,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                size: Math.random() * 3 + 1,
+                color: '180, 0, 0', // Bright red for fresh blood
+                alpha: 1,
+                age: 0,
+                lifetime: 1500
+            });
+        }
+
+        // Start animation loop
+        this.render();
+    }
+
+    drawHurtOverlays() {
+        this.hurtAnimations.forEach(hurt => {
+            const unit = this.gameState.board[hurt.unitIndex];
+            if (!unit) return; // Unit might have died
+
+            this.ctx.save();
+            this.ctx.translate(hurt.x, hurt.y);
+
+            // Pulsing red overlay to show pain
+            const pulseAlpha = (Math.sin(hurt.age * 0.01) + 1) * 0.5 * hurt.intensity;
+            this.ctx.fillStyle = `rgba(255, 0, 0, ${pulseAlpha * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, this.tileSize / 2, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+            // Draw hurt facial expression overlay
+            const size = this.tileSize / 3;
+            this.ctx.globalAlpha = hurt.intensity;
+
+            // Override emotion temporarily
+            this.drawWarriorEyes(0, -size * 0.6, size, 'pain');
+            this.drawWarriorMouth(0, -size * 0.6, size, 'pain');
+
+            // Add weapon-specific hurt effects
+            if (hurt.killerWeapon === 'SWORD') {
+                // Red slash mark
+                this.ctx.strokeStyle = `rgba(255, 0, 0, ${hurt.intensity})`;
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(-size * 0.3, -size * 0.2);
+                this.ctx.lineTo(size * 0.3, size * 0.2);
+                this.ctx.stroke();
+
+            } else if (hurt.killerWeapon === 'BOW') {
+                // Small bleeding wound
+                this.ctx.fillStyle = `rgba(139, 0, 0, ${hurt.intensity})`;
+                this.ctx.beginPath();
+                this.ctx.arc(size * 0.2, 0, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+
+            } else if (hurt.killerWeapon === 'LANCE') {
+                // Puncture wound with blood
+                this.ctx.fillStyle = `rgba(139, 0, 0, ${hurt.intensity})`;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+
+                // Blood drops falling
+                for (let i = 0; i < 3; i++) {
+                    const dropY = i * size * 0.15 * (hurt.age / hurt.duration);
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, dropY, 2, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+            }
+
+            this.ctx.restore();
+        });
+    }
+
+    // Trigger attack animation when attack happens
+    triggerAttackAnimation(attackerIndex, targetIndex, damage, weaponAdvantage) {
+        const attackerPos = this.getVisualPosition(attackerIndex);
+        const targetPos = this.getVisualPosition(targetIndex);
+
+        const attacker = this.gameState.board[attackerIndex];
+        const target = this.gameState.board[targetIndex];
+
+        // Center positions
+        const fromPos = {
+            x: attackerPos.x + this.tileSize / 2,
+            y: attackerPos.y + this.tileSize / 2
+        };
+        const toPos = {
+            x: targetPos.x + this.tileSize / 2,
+            y: targetPos.y + this.tileSize / 2
+        };
+
+        // Attack animation
+        this.animations.push({
+            type: 'attack',
+            fromPos,
+            toPos,
+            weapon: attacker.weapon,
+            startTime: Date.now(),
+            duration: 500,
+            progress: 0
+        });
+
+        // Blood particles on hit
+        for (let i = 0; i < 5; i++) {
+            this.particles.push({
+                x: toPos.x + (Math.random() - 0.5) * 20,
+                y: toPos.y + (Math.random() - 0.5) * 20,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                size: Math.random() * 3 + 1,
+                color: '220, 20, 20', // Red blood
+                alpha: 1,
+                age: 0,
+                lifetime: 1000
+            });
+        }
+
+        // Damage number
+        const isBonus = weaponAdvantage > 1.0;
+        this.damageNumbers.push({
+            text: damage.toString(),
+            x: toPos.x,
+            y: toPos.y - 20,
+            color: isBonus ? '0, 255, 0' : '255, 255, 255', // Green for bonus, white for normal
+            size: isBonus ? 18 : 14,
+            alpha: 1,
+            age: 0,
+            lifetime: 2000
+        });
+
+        // Start animation loop
+        if (this.animations.length === 1) {
+            this.render();
+        }
+    }
+
+    // Trigger death animation based on KILLER WEAPON (simplified Diablo-style)
+    triggerDeathAnimation(victimIndex, victimType, killerWeapon) {
+        const victimPos = this.getVisualPosition(victimIndex);
+        const centerX = victimPos.x + this.tileSize / 2;
+        const centerY = victimPos.y + this.tileSize / 2;
+
+        let phases = [];
+        let totalDuration = 2000; // 2 seconds - quicker but impactful
+
+        // 3 Weapon-specific death types (regardless of victim)
+        if (killerWeapon === 'SWORD') {
+            // SWORD DEATH: Swift slice, side fall, blood spray
+            phases = [
+                { type: 'sword_shock', duration: 400 },  // 😱 Shock face, slice wound
+                { type: 'sword_fall', duration: 800 },   // Falls sideways, hand to wound
+                { type: 'sword_blood', duration: 800 }   // Blood spray, final twitch
+            ];
+        } else if (killerWeapon === 'BOW') {
+            // ARROW DEATH: Piercing surprise, arrow sticks, collapse
+            phases = [
+                { type: 'arrow_hit', duration: 500 },    // 😳 Arrow hits, surprise
+                { type: 'arrow_grab', duration: 700 },   // 😖 Grabs arrow, staggers
+                { type: 'arrow_fall', duration: 800 }    // Collapses, arrow visible
+            ];
+        } else if (killerWeapon === 'LANCE') {
+            // LANCE DEATH: Pierced through, lifted, heavy fall
+            phases = [
+                { type: 'lance_pierce', duration: 300 }, // 😰 Pierced, lifted briefly
+                { type: 'lance_slide', duration: 900 },  // Slides off lance, blood flows
+                { type: 'lance_pool', duration: 800 }    // Heavy fall, big blood pool
+            ];
+        }
+
+        // Create death animation
+        this.deathAnimations.push({
+            x: centerX,
+            y: centerY,
+            unitType: victimType,
+            killedBy: killerWeapon,
+            phases: phases,
+            currentPhase: 0,
+            age: 0,
+            progress: 0,
+            totalDuration: totalDuration,
+            phaseStartTime: Date.now()
+        });
+
+        // DIABLO-STYLE MASSIVE BLOOD EXPLOSION
+        const bloodCount = killerWeapon === 'LANCE' ? 25 : killerWeapon === 'SWORD' ? 20 : 15;
+        for (let i = 0; i < bloodCount; i++) {
+            this.particles.push({
+                x: centerX + (Math.random() - 0.5) * 40,
+                y: centerY + (Math.random() - 0.5) * 40,
+                vx: (Math.random() - 0.5) * 12,
+                vy: (Math.random() - 0.5) * 12,
+                size: Math.random() * 5 + 2,
+                color: Math.random() > 0.7 ? '180, 0, 0' : '139, 0, 0', // Mix of blood reds
+                alpha: 1,
+                age: 0,
+                lifetime: 3000 + Math.random() * 1000
+            });
+        }
+
+        // Weapon-specific blood pools
+        let poolSize, poolShape;
+        if (killerWeapon === 'SWORD') {
+            poolSize = 18;
+            poolShape = 'spray'; // Directional spray pattern
+        } else if (killerWeapon === 'BOW') {
+            poolSize = 12;
+            poolShape = 'spot'; // Concentrated spot
+        } else if (killerWeapon === 'LANCE') {
+            poolSize = 30;
+            poolShape = 'pool'; // Large spreading pool
+        }
+
+        this.bloodPools.push({
+            x: centerX,
+            y: centerY,
+            size: poolSize,
+            shape: poolShape,
+            alpha: 0.9,
+            killerWeapon: killerWeapon
+        });
+
+        // Drop weapons (equipment falls off)
+        const weaponType = this.getUnitWeapon(victimType);
+        this.weaponDrops.push({
+            x: centerX + (Math.random() - 0.5) * 25,
+            y: centerY + (Math.random() - 0.5) * 25,
+            weaponType: weaponType,
+            rotation: Math.random() * Math.PI * 2,
+            wobbleSpeed: (Math.random() - 0.5) * 0.4,
+            age: 0
+        });
+
+        // After death animation, create emotional corpse
+        setTimeout(() => {
+            this.corpses.push({
+                x: centerX,
+                y: centerY,
+                unitType: victimType,
+                killedBy: killerWeapon,
+                rotation: Math.random() * Math.PI * 2,
+                emotion: 'dead' // Special dead emotion
+            });
+        }, totalDuration);
+
+        // Start animation loop
+        this.render();
+    }
+
+    getUnitWeapon(unitType) {
+        const weapons = {
+            'SCOUT': 'SWORD',
+            'ARCHER': 'BOW',
+            'KNIGHT': 'LANCE'
+        };
+        return weapons[unitType];
+    }
+
+    // Death Animation System Draw Functions
+    drawBloodPools() {
+        this.bloodPools.forEach(pool => {
+            this.ctx.fillStyle = `rgba(139, 0, 0, ${pool.alpha})`;
+
+            const centerX = pool.x;
+            const centerY = pool.y;
+
+            if (pool.shape === 'spray') {
+                // SWORD: Directional spray pattern
+                this.ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI + Math.PI; // Spray to one side
+                    const distance = pool.size * (0.8 + Math.random() * 0.4);
+                    const x = centerX + Math.cos(angle) * distance;
+                    const y = centerY + Math.sin(angle) * distance;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 3 + Math.random() * 4, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+
+            } else if (pool.shape === 'spot') {
+                // BOW: Concentrated spot
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, pool.size, 0, 2 * Math.PI);
+                this.ctx.fill();
+
+                // Small splatters around main spot
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
+                    const distance = pool.size * 1.2;
+                    const x = centerX + Math.cos(angle) * distance;
+                    const y = centerY + Math.sin(angle) * distance;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+
+            } else {
+                // LANCE: Large spreading pool (default)
+                this.ctx.beginPath();
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2;
+                    const variance = 0.7 + Math.random() * 0.6;
+                    const radius = pool.size * variance;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+
+                    if (i === 0) this.ctx.moveTo(x, y);
+                    else this.ctx.lineTo(x, y);
+                }
+                this.ctx.closePath();
+                this.ctx.fill();
+            }
+        });
+    }
+
+    drawCorpses() {
+        this.corpses.forEach(corpse => {
+            const { x, y, unitType, rotation, killedBy, emotion } = corpse;
+
+            this.ctx.save();
+            this.ctx.translate(x, y);
+            this.ctx.rotate(rotation);
+
+            // Draw corpse using emotional warrior system (darkened)
+            this.ctx.globalAlpha = 0.7; // Faded corpse
+
+            // Draw dead emotional warrior
+            const size = this.tileSize / 3;
+            this.drawWarriorBody(0, 0, size, true, 'dying'); // Always use dying emotion for corpses
+            this.drawWarriorEquipment(0, 0, size, unitType, true);
+
+            // Add death-specific details
+            if (killedBy === 'BOW') {
+                // Arrow still sticking out
+                this.ctx.globalAlpha = 0.8;
+                this.ctx.strokeStyle = '#8B4513';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(size * 0.2, -size * 0.1);
+                this.ctx.lineTo(size * 0.4, size * 0.1);
+                this.ctx.stroke();
+
+                // Arrow fletching
+                this.ctx.fillStyle = '#654321';
+                this.ctx.beginPath();
+                this.ctx.arc(size * 0.2, -size * 0.1, 2, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+
+            this.ctx.restore();
+        });
+    }
+
+    drawCorpseScout(x, y, killedBy) {
+        const size = this.tileSize / 6;
+
+        // Head
+        this.ctx.beginPath();
+        this.ctx.arc(x, y - size * 0.5, size * 0.2, 0, 2 * Math.PI);
+        this.ctx.fill();
+
+        // Body (laying down)
+        this.ctx.fillRect(x - size * 0.1, y - size * 0.3, size * 0.2, size * 0.6);
+
+        // Arms spread out
+        this.ctx.fillRect(x - size * 0.4, y - size * 0.05, size * 0.8, size * 0.1);
+
+        // Legs
+        this.ctx.fillRect(x - size * 0.15, y + size * 0.3, size * 0.1, size * 0.3);
+        this.ctx.fillRect(x + size * 0.05, y + size * 0.3, size * 0.1, size * 0.3);
+
+        // Death-specific details
+        if (killedBy === 'BOW') {
+            // Arrow sticking out
+            this.ctx.strokeStyle = '#8B4513';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, y);
+            this.ctx.lineTo(x, y - size * 0.8);
+            this.ctx.stroke();
+        }
+    }
+
+    drawCorpseArcher(x, y, killedBy) {
+        const size = this.tileSize / 6;
+
+        // Head
+        this.ctx.beginPath();
+        this.ctx.arc(x, y - size * 0.5, size * 0.2, 0, 2 * Math.PI);
+        this.ctx.fill();
+
+        // Body
+        this.ctx.fillRect(x - size * 0.1, y - size * 0.3, size * 0.2, size * 0.6);
+
+        // Arms
+        this.ctx.fillRect(x - size * 0.4, y - size * 0.05, size * 0.8, size * 0.1);
+
+        // Legs
+        this.ctx.fillRect(x - size * 0.15, y + size * 0.3, size * 0.1, size * 0.3);
+        this.ctx.fillRect(x + size * 0.05, y + size * 0.3, size * 0.1, size * 0.3);
+
+        // Scattered arrows around body (from spilled quiver)
+        if (killedBy === 'LANCE' || killedBy === 'SWORD') {
+            for (let i = 0; i < 3; i++) {
+                const arrowX = x + (Math.random() - 0.5) * size;
+                const arrowY = y + (Math.random() - 0.5) * size;
+                this.ctx.strokeStyle = '#8B4513';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(arrowX, arrowY);
+                this.ctx.lineTo(arrowX + size * 0.3, arrowY);
+                this.ctx.stroke();
+            }
+        }
+    }
+
+    drawCorpseKnight(x, y, killedBy) {
+        const size = this.tileSize / 5; // Knights are bigger
+
+        // Head
+        this.ctx.beginPath();
+        this.ctx.arc(x, y - size * 0.5, size * 0.25, 0, 2 * Math.PI);
+        this.ctx.fill();
+
+        // Larger body
+        this.ctx.fillRect(x - size * 0.15, y - size * 0.3, size * 0.3, size * 0.6);
+
+        // Arms
+        this.ctx.fillRect(x - size * 0.5, y - size * 0.05, size * 1.0, size * 0.15);
+
+        // Legs
+        this.ctx.fillRect(x - size * 0.2, y + size * 0.3, size * 0.15, size * 0.4);
+        this.ctx.fillRect(x + size * 0.05, y + size * 0.3, size * 0.15, size * 0.4);
+
+        // Armor pieces scattered around
+        for (let i = 0; i < 4; i++) {
+            const pieceX = x + (Math.random() - 0.5) * size * 1.5;
+            const pieceY = y + (Math.random() - 0.5) * size * 1.5;
+            this.ctx.fillStyle = '#666666';
+            this.ctx.fillRect(pieceX, pieceY, size * 0.1, size * 0.1);
+        }
+    }
+
+    drawWeaponDrops() {
+        this.weaponDrops.forEach(weapon => {
+            const { x, y, weaponType, rotation } = weapon;
+
+            this.ctx.save();
+            this.ctx.translate(x, y);
+            this.ctx.rotate(rotation);
+
+            this.ctx.strokeStyle = '#666666';
+            this.ctx.lineWidth = 2;
+
+            if (weaponType === 'SWORD') {
+                // Fallen sword
+                this.ctx.beginPath();
+                this.ctx.moveTo(-15, 0);
+                this.ctx.lineTo(15, 0);
+                this.ctx.stroke();
+
+                // Hilt
+                this.ctx.beginPath();
+                this.ctx.moveTo(-18, -5);
+                this.ctx.lineTo(-18, 5);
+                this.ctx.stroke();
+
+            } else if (weaponType === 'BOW') {
+                // Broken bow (two pieces)
+                this.ctx.beginPath();
+                this.ctx.moveTo(-10, -10);
+                this.ctx.lineTo(0, 0);
+                this.ctx.stroke();
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, 0);
+                this.ctx.lineTo(10, 10);
+                this.ctx.stroke();
+
+            } else if (weaponType === 'LANCE') {
+                // Fallen lance
+                this.ctx.beginPath();
+                this.ctx.moveTo(-20, 0);
+                this.ctx.lineTo(20, 0);
+                this.ctx.stroke();
+
+                // Lance tip
+                this.ctx.fillStyle = '#888888';
+                this.ctx.beginPath();
+                this.ctx.moveTo(20, 0);
+                this.ctx.lineTo(15, -3);
+                this.ctx.lineTo(15, 3);
+                this.ctx.closePath();
+                this.ctx.fill();
+            }
+
+            this.ctx.restore();
+        });
+    }
+
+    drawDeathAnimations() {
+        this.deathAnimations.forEach(deathAnim => {
+            const currentPhase = deathAnim.phases[deathAnim.currentPhase];
+            if (!currentPhase) return;
+
+            const phaseProgress = (deathAnim.age - deathAnim.currentPhase * (deathAnim.totalDuration / deathAnim.phases.length)) / (deathAnim.totalDuration / deathAnim.phases.length);
+
+            this.ctx.save();
+            this.ctx.translate(deathAnim.x, deathAnim.y);
+
+            // Draw dying emotional warrior based on weapon that killed them
+            const { unitType, killedBy } = deathAnim;
+            const alpha = Math.max(0.4, 1 - deathAnim.progress * 0.6);
+            this.ctx.globalAlpha = alpha;
+
+            // Apply death pose transformations
+            if (currentPhase.type.includes('fall') || currentPhase.type.includes('slide')) {
+                this.ctx.rotate(phaseProgress * Math.PI / 2); // Falling rotation
+            }
+
+            // Draw emotional dying warrior
+            this.drawDyingEmotionalWarrior(0, 0, unitType, currentPhase, phaseProgress, killedBy);
+
+            this.ctx.restore();
+        });
+    }
+
+    drawDyingEmotionalWarrior(x, y, unitType, currentPhase, progress, killerWeapon) {
+        const size = this.tileSize / 3;
+
+        // Determine death emotion based on phase
+        let deathEmotion = 'shock';
+        if (currentPhase.type.includes('grab') || currentPhase.type.includes('fall')) {
+            deathEmotion = 'pain';
+        } else if (currentPhase.type.includes('blood') || currentPhase.type.includes('pool')) {
+            deathEmotion = 'dying';
+        }
+
+        // Draw base warrior with death emotion
+        this.drawWarriorBody(x, y, size, true, deathEmotion);
+        this.drawWarriorEquipment(x, y, size, unitType, true);
+
+        // Add weapon-specific death details
+        if (killerWeapon === 'SWORD' && currentPhase.type === 'sword_blood') {
+            // Blood spray from sword wound
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI + Math.PI; // Spray sideways
+                const distance = progress * size * (0.8 + Math.random() * 0.4);
+                const bloodX = x + Math.cos(angle) * distance;
+                const bloodY = y + Math.sin(angle) * distance;
+
+                this.ctx.fillStyle = `rgba(180, 0, 0, ${1 - progress})`;
+                this.ctx.beginPath();
+                this.ctx.arc(bloodX, bloodY, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+
+        } else if (killerWeapon === 'BOW') {
+            // Arrow sticking out
+            this.ctx.strokeStyle = '#8B4513';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + size * 0.2, y - size * 0.1);
+            this.ctx.lineTo(x + size * 0.4, y + size * 0.1);
+            this.ctx.stroke();
+
+            // Arrow fletching
+            this.ctx.fillStyle = '#654321';
+            this.ctx.beginPath();
+            this.ctx.arc(x + size * 0.2, y - size * 0.1, 2, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+        } else if (killerWeapon === 'LANCE' && currentPhase.type === 'lance_slide') {
+            // Blood flowing down from pierce wound
+            for (let i = 0; i < 4; i++) {
+                const flowY = y + i * size * 0.1 * progress;
+                this.ctx.fillStyle = `rgba(139, 0, 0, ${1 - i * 0.2})`;
+                this.ctx.beginPath();
+                this.ctx.arc(x, flowY, 2, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+        }
+    }
+
+    drawDyingScout(x, y, progress, phase, killedBy) {
+        const size = this.tileSize / 6;
+
+        if (phase.type === 'recoil') {
+            // Grabbing neck/chest
+            this.ctx.fillStyle = '#8B0000';
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size * 0.3, 0, 2 * Math.PI);
+            this.ctx.fill();
+
+            // Hands to wound
+            this.ctx.strokeStyle = '#654321';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x - size * 0.2, y - size * 0.1);
+            this.ctx.lineTo(x, y);
+            this.ctx.moveTo(x + size * 0.2, y - size * 0.1);
+            this.ctx.lineTo(x, y);
+            this.ctx.stroke();
+
+        } else if (phase.type === 'fall') {
+            // Falling forward
+            const fallOffset = progress * size * 0.5;
+            this.drawStickFigureBase(x, y + fallOffset, size * 0.8, { hasActed: true, owner: 0 });
+
+        } else if (phase.type === 'final') {
+            // Final blood spurt
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const distance = progress * size * (0.5 + Math.random() * 0.5);
+                const bloodX = x + Math.cos(angle) * distance;
+                const bloodY = y + Math.sin(angle) * distance;
+
+                this.ctx.fillStyle = `rgba(139, 0, 0, ${1 - progress})`;
+                this.ctx.beginPath();
+                this.ctx.arc(bloodX, bloodY, 2, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+        }
+    }
+
+    drawDyingArcher(x, y, progress, phase, killedBy) {
+        const size = this.tileSize / 6;
+
+        if (phase.type === 'bow_break') {
+            // Bow shattering
+            this.ctx.strokeStyle = '#8B4513';
+            this.ctx.lineWidth = 3;
+
+            // First half flying left
+            this.ctx.save();
+            this.ctx.translate(x - progress * size, y);
+            this.ctx.rotate(progress * Math.PI);
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, size * 0.2, -Math.PI/3, Math.PI/3);
+            this.ctx.stroke();
+            this.ctx.restore();
+
+            // Second half flying right
+            this.ctx.save();
+            this.ctx.translate(x + progress * size, y);
+            this.ctx.rotate(-progress * Math.PI);
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, size * 0.2, -Math.PI/3, Math.PI/3);
+            this.ctx.stroke();
+            this.ctx.restore();
+
+        } else if (phase.type === 'stagger') {
+            // Staggering backward
+            const staggerOffset = progress * size * 0.3;
+            this.drawStickFigureBase(x, y + staggerOffset, size, { hasActed: true, owner: 0 });
+
+            // Hands to chest
+            this.ctx.fillStyle = '#8B0000';
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size * 0.1, 0, 2 * Math.PI);
+            this.ctx.fill();
+        }
+    }
+
+    drawDyingKnight(x, y, progress, phase, killedBy) {
+        const size = this.tileSize / 5;
+
+        if (phase.type === 'weapon_drop') {
+            // Weapons falling
+            const dropDistance = progress * size * 0.8;
+
+            // Lance falling
+            this.ctx.save();
+            this.ctx.translate(x + size * 0.3, y + dropDistance);
+            this.ctx.rotate(progress * Math.PI * 2);
+            this.ctx.strokeStyle = '#8B4513';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(-size * 0.3, 0);
+            this.ctx.lineTo(size * 0.3, 0);
+            this.ctx.stroke();
+            this.ctx.restore();
+
+            // Shield falling
+            this.ctx.save();
+            this.ctx.translate(x - size * 0.3, y + dropDistance * 0.7);
+            this.ctx.rotate(-progress * Math.PI);
+            this.ctx.fillStyle = '#666666';
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, size * 0.15, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.restore();
+
+        } else if (phase.type === 'timber') {
+            // Falling like a tree
+            this.ctx.save();
+            this.ctx.rotate(progress * Math.PI / 2);
+            this.drawStickFigureBase(0, 0, size, { hasActed: true, owner: 0 });
+            this.ctx.restore();
+
+        } else if (phase.type === 'impact') {
+            // Ground impact with screen shake effect
+            const shakeX = (Math.random() - 0.5) * progress * 10;
+            const shakeY = (Math.random() - 0.5) * progress * 10;
+
+            this.ctx.save();
+            this.ctx.translate(shakeX, shakeY);
+            this.drawStickFigureBase(x, y, size, { hasActed: true, owner: 0 });
+
+            // Impact particles
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const distance = progress * size;
+                const particleX = x + Math.cos(angle) * distance;
+                const particleY = y + Math.sin(angle) * distance;
+
+                this.ctx.fillStyle = `rgba(101, 67, 33, ${1 - progress})`;
+                this.ctx.beginPath();
+                this.ctx.arc(particleX, particleY, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+            this.ctx.restore();
+        }
     }
 
     // Debug function to test findMatch manually
