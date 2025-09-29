@@ -64,9 +64,9 @@ export class UnitRenderer {
         if (unit.hasActed) emotion = 'tired';
         if (unit.currentHp < unit.maxHp * 0.3) emotion = 'hurt';
 
-        // DEUTLICHE Gegner-Markierung
+        // DEUTLICHE Gegner-Markierung - IMMER dieselben Farben unabhängig von HP
         if (!isPlayer) {
-            // Großer roter Kreis um Gegner
+            // Großer roter Kreis um Gegner - IMMER rot, egal ob verletzt
             ctx.strokeStyle = '#FF0000';
             ctx.lineWidth = 6;
             ctx.globalAlpha = 0.8;
@@ -75,7 +75,7 @@ export class UnitRenderer {
             ctx.stroke();
             ctx.globalAlpha = 1.0;
         } else {
-            // Grüner Kreis um eigene Units
+            // Grüner Kreis um eigene Units - IMMER grün, egal ob verletzt
             ctx.strokeStyle = '#00FF00';
             ctx.lineWidth = 4;
             ctx.globalAlpha = 0.6;
@@ -99,8 +99,8 @@ export class UnitRenderer {
         const skinColor = isPlayer ? '#FFDBAC' : '#8B7355'; // Eigene: helle Haut, Gegner: dunkle Haut
         const eyeColor = isPlayer ? '#000000' : '#FF0000'; // Eigene: schwarze Augen, Gegner: rote Augen
 
-        // Use player color for body with high contrast
-        const bodyColor = isPlayer ? '#00AA00' : '#CC0000'; // Satte Farben für bessere Sichtbarkeit
+        // Use player color for body with high contrast - IMMER dieselben Farben
+        const bodyColor = isPlayer ? '#00AA00' : '#CC0000'; // IMMER dieselben Farben, unabhängig von HP/emotion
 
         // HEAD - Larger and more expressive
         ctx.fillStyle = skinColor;

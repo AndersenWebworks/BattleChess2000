@@ -15,15 +15,22 @@ body {
     radial-gradient(circle at 80% 20%, rgba(85, 85, 85, 0.4) 0%, transparent 50%),
     linear-gradient(135deg, #1a1a1a 0%, #2d1b0e 25%, #1a0a0a 75%, #000000 100%);
   color: #d4af37;
-  overflow: hidden;
+  overflow: visible;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   position: relative;
+
+  /* Mobile Scroll-Optimierungen */
+  -webkit-overflow-scrolling: touch;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-/* Medieval atmospheric overlay */
+/* Medieval atmospheric overlay - Mobile optimiert */
 body::before {
   content: '';
   position: fixed;
@@ -48,6 +55,13 @@ body::before {
     );
   pointer-events: none;
   z-index: 1;
+
+  /* Mobile Scroll-Performance */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Main container */
@@ -272,7 +286,7 @@ body::before {
 }
 
 #gameCanvas {
-  border: 4px solid #8b4513;
+  border: none;
   border-radius: 4px;
   background:
     radial-gradient(circle at 30% 20%,
@@ -444,7 +458,7 @@ body::before {
   right: 0;
   height: calc(120px + env(safe-area-inset-bottom));
   background: rgba(26, 10, 10, 0.98);
-  border-top: 3px solid #8b4513;
+  border-top: none;
   box-shadow: 0 -4px 20px rgba(139, 0, 0, 0.5);
   display: flex;
   align-items: center;
@@ -454,7 +468,7 @@ body::before {
   padding-left: max(10px, env(safe-area-inset-left));
   padding-right: max(10px, env(safe-area-inset-right));
   gap: 8px;
-  overflow: hidden; /* NO SCROLLING */
+  overflow: visible;
   z-index: 100;
   position: relative;
 }
@@ -689,6 +703,32 @@ body::before {
   cursor: not-allowed;
   pointer-events: none;
   filter: grayscale(0.4);
+}
+
+/* Alle Karten grau ausgrauen wenn Gegner am Zug ist */
+.game-container.opponent-turn .battle-card {
+  opacity: 0.3 !important;
+  filter: grayscale(1) brightness(0.5) !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  transition: all 0.3s ease;
+}
+
+/* Hover-Effekte komplett deaktivieren während Gegnerzug */
+.game-container.opponent-turn .battle-card:hover {
+  transform: none !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7), inset 0 2px 0 rgba(212, 175, 55, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.5) !important;
+  border-color: #d4af37 !important;
+  border-width: 3px !important;
+}
+
+/* Alle spielbaren/unspielbare Zustände während Gegnerzug überschreiben */
+.game-container.opponent-turn .battle-card.battle-card--playable,
+.game-container.opponent-turn .battle-card.battle-card--unplayable {
+  opacity: 0.3 !important;
+  filter: grayscale(1) brightness(0.5) !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
 }
 
 /* 💫 CARD-TYPE SPECIFIC STYLING */
@@ -1422,8 +1462,14 @@ body::before {
   border: 1px solid rgba(139, 69, 19, 0.3) !important;
 }
 
-/* Mobile-specific optimizations */
+/* Mobile-specific optimizations mit Scroll-Performance */
 @media (max-width: 480px) {
+  /* Mobile Scroll-Performance für alle Elemente */
+  * {
+    -webkit-overflow-scrolling: touch;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
   .game-header {
     height: 50px;
     padding: 0 15px;
